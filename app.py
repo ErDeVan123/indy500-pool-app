@@ -96,7 +96,7 @@ def get_base_drivers():
             "https://your-hosting-site.com/car-28.jpg", "https://your-hosting-site.com/car-7.jpg",
             "https://your-hosting-site.com/car-26.jpg", "https://your-hosting-site.com/car-6b.jpg",
             "https://your-hosting-site.com/car-45.jpg", "https://your-hosting-site.com/car-31.jpg",
-            "https://your-hosting-site.com/car-2.jpg", "https://your-hosting-site.com/car-18.jpg",
+            "https://your-running-site.com/car-2.jpg", "https://your-hosting-site.com/car-18.jpg",
             "https://your-hosting-site.com/car-27.jpg", "https://your-hosting-site.com/car-11.jpg",
             "https://your-hosting-site.com/car-47.jpg", "https://your-hosting-site.com/car-15.jpg",
             "https://your-hosting-site.com/car-19.jpg", "https://your-hosting-site.com/car-51.jpg",
@@ -291,11 +291,10 @@ elif selected_tab == "📝 Visual Draft Board":
         st.session_state["selected_pool"] = []
         st.rerun()
 
-# --- VIEW 3: LIVE FIELD RUNNING ORDER (WITH LAP MILESTONE SCORING) ---
+# --- VIEW 3: LIVE FIELD RUNNING ORDER ---
 elif selected_tab == "🏁 Live Field":
     st.header("Actual Indy 500 Running Order")
     
-    # Milestone filter buttons at the top of the tab
     milestone_options = ["Start", "Lap 100", "Lap 150", "Finish"]
     selected_milestone = st.segmented_control(
         "Display Sort Metric:",
@@ -303,7 +302,6 @@ elif selected_tab == "🏁 Live Field":
         default="Start"
     )
     
-    # Establish sorting logic based on active choice
     if selected_milestone == "Lap 100":
         sort_by_col = "Pos_100"
         display_title = "Running Order @ Lap 100"
@@ -319,7 +317,6 @@ elif selected_tab == "🏁 Live Field":
 
     st.write("---")
 
-    # 4-Box Management Panel with Dropdowns
     with st.expander("🛠️ Live Race Timing Tower Management (Input Milestone Positions Here)"):
         st.markdown("Select placement ranks via the dropdown boxes. Uncompleted points map safely to `0`.")
         
@@ -355,7 +352,6 @@ elif selected_tab == "🏁 Live Field":
 
     st.subheader(display_title)
     
-    # Sorting mechanics: push unrun 0 positions down to the bottom
     sorted_df = df.copy()
     if sort_by_col != "Starting_Pos":
         sorted_df["sort_key"] = sorted_df[sort_by_col].apply(lambda x: 99 if x == 0 else x)
@@ -365,17 +361,28 @@ elif selected_tab == "🏁 Live Field":
     
     for _, row in sorted_df.iterrows():
         with st.container(border=True):
-            col1, col2, col3 = st.columns([1.5, 2.5, 4.0])
+            col1, col2 = st.columns([4.0, 4.0])
             with col1:
                 current_val = row[sort_by_col]
                 metric_label = f"P{current_val}" if current_val != 0 else "--"
                 st.metric("Current Order", metric_label)
-                st.caption(f"Grid Start: P{row['Starting_Pos']}")
-            with col2:
                 st.subheader(row['Driver'])
                 st.caption(f"#{row['Car_Num']} | {row['Team']}")
                 st.markdown(f"🏁 **P{row['Pos_100']}** (100L) | **P{row['Pos_150']}** (150L) | **P{row['Pos_Final']}** (Fin)")
-            with col3:
+                
+                # --- LIVE FIELD INDIVIDUAL DRIVER PROFILE CHART (INVERTED Y) ---
+                m_labels = ["Start", "Lap 100", "Lap 150", "Finish"]
+                m_vals = [row['Starting_Pos'], row['Pos_100'], row['Pos_150'], row['Pos_Final']]
+                
+                driver_history = []
+                for lbl, val in zip(m_labels, m_vals):
+                    if lbl == "Start" or val != 0:
+                        driver_history.append({"Milestone": lbl, "Position": val})
+                        
+                if len(driver_history) > 1:
+                    single_driver_df = pd.DataFrame(driver_history).set_index("Milestone")
+                    st.line_chart(single_driver_df, height=175, y_label="Track Position", x_label="Milestone", y=[33, 1])
+            with col2:
                 st.image(row['Car_Pic'])
 
 # --- VIEW 4: ROSTER VIEW ---
@@ -391,15 +398,12 @@ elif selected_tab == "📋 Roster View":
         sort_basis = "Pos_Final" if df["Pos_Final"].sum() == 561 else ("Pos_150" if df["Pos_150"].sum() == 561 else ("Pos_100" if df["Pos_100"].sum() == 561 else "Starting_Pos"))
         u_df = df[df['Driver'].isin(u_picks)].sort_values(by=sort_basis)
         
-        st.metric("Roster Live Score Sum", int(u_df[sort_basis].sum()))
-        
-        # --- ROSTER WIDE MULTI-DRIVER LINE GRAPH ---
+        # --- ROSTER WIDE MULTI-DRIVER LINE GRAPH (INVERTED Y) ---
         st.subheader("Lineup Milestone Progression Tracker")
         chart_records = []
         milestones = ["Start", "Lap 100", "Lap 150", "Finish"]
         
         for _, row in u_df.iterrows():
-            # Only graph metrics that have been updated past 0
             points = [row['Starting_Pos'], row['Pos_100'], row['Pos_150'], row['Pos_Final']]
             for m_label, pt in zip(milestones, points):
                 if m_label == "Start" or pt != 0:
@@ -411,10 +415,8 @@ elif selected_tab == "📋 Roster View":
                     
         if chart_records:
             chart_df = pd.DataFrame(chart_records).pivot(index="Milestone", columns="Driver", values="Position")
-            # Enforce timeline execution axis sorting
             chart_df = chart_df.reindex(milestones, axis=0).dropna(how='all')
-            st.line_chart(chart_df, y_label="Track Position Rank", x_label="Race Milestone")
-            st.caption("💡 Tip: Lower line vectors indicate superior tracking performance closer to P1.")
+            st.line_chart(chart_df, y_label="Track Position Rank", x_label="Race Milestone", y=[33, 1])
             
         st.write("---")
         
@@ -452,11 +454,10 @@ elif selected_tab == "📊 Popular Picks":
                     else:
                         st.markdown("*Nobody has drafted this driver yet.*")
                         
-                    # --- INDIVIDUAL DRIVER PROFILE METRIC CHART ---
+                    # --- POPULAR PICKS INDIVIDUAL DRIVER PROFILE CHART (INVERTED Y) ---
                     m_labels = ["Start", "Lap 100", "Lap 150", "Finish"]
                     m_vals = [row['Starting_Pos'], row['Pos_100'], row['Pos_150'], row['Pos_Final']]
                     
-                    # Package active telemetry points safely
                     driver_history = []
                     for lbl, val in zip(m_labels, m_vals):
                         if lbl == "Start" or val != 0:
@@ -464,7 +465,7 @@ elif selected_tab == "📊 Popular Picks":
                             
                     if len(driver_history) > 1:
                         single_driver_df = pd.DataFrame(driver_history).set_index("Milestone")
-                        st.line_chart(single_driver_df, height=175, y_label="Track Position", x_label="Milestone")
+                        st.line_chart(single_driver_df, height=175, y_label="Track Position", x_label="Milestone", y=[33, 1])
                 with col2:
                     st.image(row['Car_Pic'])
 
