@@ -4,11 +4,21 @@ import os
 
 # Page layout setup
 st.set_page_config(page_title="Indy 500 Pool Engine", layout="centered")
-st.title("🏎️ Indy 500 Live Pool Tracker")
 
-# Custom CSS: "contain" ensures the full car is visible; flex centering keeps them perfectly vertical
+# Custom Styling: Checkered background pattern and clean table alignments
 st.markdown("""
     <style>
+    /* Set a clean, responsive checkered flag background pattern */
+    .stApp {
+        background-image: linear-gradient(45deg, rgba(200,200,200,0.15) 25%, transparent 25%), 
+                          linear-gradient(-45deg, rgba(200,200,200,0.15) 25%, transparent 25%), 
+                          linear-gradient(45deg, transparent 75%, rgba(200,200,200,0.15) 75%), 
+                          linear-gradient(-45deg, transparent 75%, rgba(200,200,200,0.15) 75%);
+        background-size: 40px 40px;
+        background-position: 0 0, 0 20px, 20px -20px, -20px 0px;
+        background-color: #ffffff;
+    }
+    
     /* Target images inside columns to center vertically and fit horizontally */
     [data-testid="stImage"] img {
         height: 100px !important;
@@ -22,18 +32,21 @@ st.markdown("""
     [data-testid="stHorizontalBlock"] {
         align-items: center !important;
     }
-    /* Target the dataframe to center specific numeric columns */
+    /* Target the standings dataframe to center specific numeric columns */
     [data-testid="stDataFrame"] div[data-testid="stTable"] th,
     [data-testid="stDataFrame"] div[data-testid="stTable"] td {
         text-align: center !important;
+        white-space: normal !important; /* Allow label text wrapping to save width */
     }
-    /* Force left alignment specifically for the Participant Name column cells */
+    /* Force left alignment specifically for the Name column cells (4th item in sequence) */
     [data-testid="stDataFrame"] div[data-testid="stTable"] td:nth-child(4),
     [data-testid="stDataFrame"] div[data-testid="stTable"] th:nth-child(4) {
         text-align: left !important;
     }
     </style>
 """, unsafe_allow_html=True)
+
+st.title("🏎️ Indy 500: VanGutz Style")
 
 # 1. Base Starting Grid Data
 @st.cache_data
@@ -72,7 +85,7 @@ def get_base_drivers():
             "Yes","Yes","Yes","Yes","Yes","Yes","Yes","Yes","Yes","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No"
         ],
         "Car_Pic": [
-            "https://www.indycar.com/-/media/IndyCar/Cars/2026/IndyCar-Series/Liveries/Indy500/10-DHL-SS.png?dp=05-11-2026T06:02PM", "https://your-hosting-site.com/car-20.jpg",
+            "https://your-hosting-site.com/car-10.jpg", "https://your-hosting-site.com/car-20.jpg",
             "https://your-hosting-site.com/car-12.jpg", "https://your-hosting-site.com/car-60.jpg",
             "https://your-hosting-site.com/car-14.jpg", "https://your-hosting-site.com/car-5.jpg",
             "https://your-hosting-site.com/car-8.jpg", "https://your-hosting-site.com/car-23.jpg",
@@ -119,7 +132,7 @@ def load_picks():
 
 picks_df = load_picks()
 
-# 4. Refactored Clear One-Click Navigation Layout
+# 4. Clear One-Click Navigation Layout
 tab_options = ["🏆 Standings", "📝 Visual Draft Board", "🏁 Live Field", "📋 Roster View", "📊 Popular Picks"]
 
 selected_tab = st.segmented_control(
@@ -152,51 +165,51 @@ if selected_tab == "🏆 Standings":
             if (df['Pos_Final'] == 0).all(): score_final = 0
 
             leaderboard_data.append({
-                "Participant Name": row['Participant'],
-                "100 Laps Points": int(score_100),
-                "150 Laps Points": int(score_150),
-                "Final Points": int(score_final),
-                "Total Starting Positions": int(total_start_positions)
+                "Name": row['Participant'],
+                "100L Pts": int(score_100),
+                "150L Pts": int(score_150),
+                "Final Pts": int(score_final),
+                "Starting Pts": int(total_start_positions)
             })
             
         master_df = pd.DataFrame(leaderboard_data)
         
-        # Default all placement ranks explicitly to 0 unless milestones actually contain real telemetry data
+        # Default all placement ranks explicitly to 0 unless milestones actually contain real data
         if not (df['Pos_100'] == 0).all():
-            master_df = master_df.sort_values(by="100 Laps Points", ascending=True)
-            master_df["100 Lap Place"] = range(1, len(master_df) + 1)
+            master_df = master_df.sort_values(by="100L Pts", ascending=True)
+            master_df["100L Place"] = range(1, len(master_df) + 1)
         else:
-            master_df["100 Lap Place"] = 0
+            master_df["100L Place"] = 0
 
         if not (df['Pos_150'] == 0).all():
-            master_df = master_df.sort_values(by="150 Laps Points", ascending=True)
-            master_df["150 Lap Place"] = range(1, len(master_df) + 1)
+            master_df = master_df.sort_values(by="150L Pts", ascending=True)
+            master_df["150L Place"] = range(1, len(master_df) + 1)
         else:
-            master_df["150 Lap Place"] = 0
+            master_df["150L Place"] = 0
 
         if not (df['Pos_Final'] == 0).all():
-            master_df = master_df.sort_values(by="Final Points", ascending=True)
-            master_df["Place"] = range(1, len(master_df) + 1)
+            master_df = master_df.sort_values(by="Final Pts", ascending=True)
+            master_df["Final Place"] = range(1, len(master_df) + 1)
         else:
-            master_df["Place"] = 0
+            master_df["Final Place"] = 0
         
         column_order = [
-            "Place", "100 Lap Place", "150 Lap Place", "Participant Name", 
-            "Final Points", "100 Laps Points", "150 Laps Points", "Total Starting Positions"
+            "Final Place", "100L Place", "150L Place", "Name", 
+            "Final Pts", "100L Pts", "150L Pts", "Starting Pts"
         ]
-        master_df = master_df[column_order].sort_values(by=["Place", "Participant Name"])
+        master_df = master_df[column_order].sort_values(by=["Final Place", "Name"])
 
         st.dataframe(
             master_df, 
             column_config={
-                "Place": st.column_config.NumberColumn("Final Place", format="%d"),
-                "100 Lap Place": st.column_config.NumberColumn("100L Place", format="%d"),
-                "150 Lap Place": st.column_config.NumberColumn("150L Place", format="%d"),
-                "Participant Name": "Participant's Name",
-                "Final Points": "Final Points",
-                "100 Laps Points": "100L Points",
-                "150 Laps Points": "150L Points",
-                "Total Starting Positions": "Total Starting Positions"
+                "Final Place": st.column_config.NumberColumn("Final Place", format="%d"),
+                "100L Place": st.column_config.NumberColumn("100L Place", format="%d"),
+                "150L Place": st.column_config.NumberColumn("150L Place", format="%d"),
+                "Name": "Name",
+                "Final Pts": "Final Pts",
+                "100L Pts": "100L Pts",
+                "150L Pts": "150L Pts",
+                "Starting Pts": "Starting Pts"
             },
             use_container_width=True, 
             hide_index=True
@@ -270,7 +283,7 @@ elif selected_tab == "📝 Visual Draft Board":
         new_entry = pd.DataFrame([{
             "Participant": entry_name,
             "P1": current_picks[0], "P2": current_picks[1], "P3": current_picks[2], "P4": current_picks[3],
-            "P5": current_picks[4], "P6": current_picks[5], "P7": current_picks[6], "P8": current_picks[7]
+            "P5": current_picks[4], "P6": current_picks[5], "P7": current_picks[6], "P7": current_picks[6], "P8": current_picks[7]
         }])
         updated_df = pd.concat([picks_df, new_entry], ignore_index=True)
         updated_df.to_csv(PICKS_FILE, index=False)
