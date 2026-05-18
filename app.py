@@ -25,12 +25,11 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# 1. Official Starting Grid Data (Full 33-Driver Field)
-@st.cache_data(ttl=5)
-def load_drivers():
+# 1. Base Starting Grid Data
+@st.cache_data
+def get_base_drivers():
     data = {
         "Starting_Pos": [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33],
-        "Current_Pos": [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33],
         "Car_Num": [10,20,12,60,14,5,8,23,3,9,76,75,33,6,21,66,28,7,26,6,45,31,2,18,27,11,47,15,19,51,77,4,24],
         "Driver": [
             "Alex Palou", "Alexander Rossi", "David Malukas", "Felix Rosenqvist", "Santino Ferrucci", 
@@ -56,53 +55,53 @@ def load_drivers():
             "232.105 mph", "231.994 mph", "231.785 mph", "231.654 mph", "231.411 mph", 
             "231.202 mph", "231.004 mph", "230.985 mph", "230.841 mph", "230.652 mph", 
             "230.414 mph", "230.201 mph", "230.114 mph", "229.984 mph", "229.814 mph", 
-            "229.654 mph", "229.654 mph", "229.412 mph", "229.214 mph", "229.004 mph", 
+            "229.654 mph", "229.412 mph", "229.412 mph", "229.214 mph", "229.004 mph", 
             "228.841 mph", "228.651 mph", "228.411 mph"
         ],
         "Tier_1_3": [
             "Yes","Yes","Yes","Yes","Yes","Yes","Yes","Yes","Yes","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No"
         ],
         "Car_Pic": [
-            "https://your-hosting-site.com/car-10.jpg",  # 1. Alex Palou
-            "https://your-hosting-site.com/car-20.jpg",  # 2. Alexander Rossi
-            "https://your-hosting-site.com/car-12.jpg",  # 3. David Malukas
-            "https://your-hosting-site.com/car-60.jpg",  # 4. Felix Rosenqvist
-            "https://your-hosting-site.com/car-14.jpg",  # 5. Santino Ferrucci
-            "https://your-hosting-site.com/car-5.jpg",   # 6. Pato O'Ward
-            "https://your-hosting-site.com/car-8.jpg",   # 7. Kyffin Simpson
-            "https://your-hosting-site.com/car-23.jpg",  # 8. Conor Daly
-            "https://your-hosting-site.com/car-3.jpg",   # 9. Scott McLaughlin
-            "https://your-hosting-site.com/car-9.jpg",   # 10. Scott Dixon
-            "https://your-hosting-site.com/car-76.jpg",  # 11. Rinus VeeKay
-            "https://your-hosting-site.com/car-75.jpg",  # 12. Takuma Sato
-            "https://your-hosting-site.com/car-33.jpg",  # 13. Ed Carpenter
-            "https://your-hosting-site.com/car-6.jpg",   # 14. Helio Castroneves
-            "https://your-hosting-site.com/car-21.jpg",  # 15. Christian Rasmussen
-            "https://your-hosting-site.com/car-66.jpg",  # 16. Marcus Armstrong
-            "https://your-hosting-site.com/car-28.jpg",  # 17. Marcus Ericsson
-            "https://your-hosting-site.com/car-7.jpg",   # 18. Christian Lundgaard
-            "https://your-hosting-site.com/car-26.jpg",  # 19. Will Power
-            "https://your-hosting-site.com/car-6b.jpg",  # 20. Nolan Siegel
-            "https://your-hosting-site.com/car-45.jpg",  # 21. Louis Foster
-            "https://your-hosting-site.com/car-31.jpg",  # 22. Ryan Hunter-Reay
-            "https://your-hosting-site.com/car-2.jpg",   # 23. Josef Newgarden
-            "https://your-hosting-site.com/car-18.jpg",  # 24. Romain Grosjean
-            "https://your-hosting-site.com/car-27.jpg",  # 25. Kyle Kirkwood
-            "https://your-hosting-site.com/car-11.jpg",  # 26. Katherine Legge
-            "https://your-hosting-site.com/car-47.jpg",  # 27. Mick Schumacher
-            "https://your-hosting-site.com/car-15.jpg",  # 28. Graham Rahal
-            "https://your-hosting-site.com/car-19.jpg",  # 29. Dennis Hauger
-            "https://your-hosting-site.com/car-51.jpg",  # 30. Jacob Abel
-            "https://your-hosting-site.com/car-77.jpg",  # 31. Sting Ray Robb
-            "https://your-hosting-site.com/car-4.jpg",   # 32. Caio Collet
-            "https://your-hosting-site.com/car-24.jpg"   # 33. Jack Harvey
+            "https://your-hosting-site.com/car-10.jpg", "https://your-hosting-site.com/car-20.jpg",
+            "https://your-hosting-site.com/car-12.jpg", "https://your-hosting-site.com/car-60.jpg",
+            "https://your-hosting-site.com/car-14.jpg", "https://your-hosting-site.com/car-5.jpg",
+            "https://your-hosting-site.com/car-8.jpg", "https://your-hosting-site.com/car-23.jpg",
+            "https://your-hosting-site.com/car-3.jpg", "https://your-hosting-site.com/car-9.jpg",
+            "https://your-hosting-site.com/car-76.jpg", "https://your-hosting-site.com/car-75.jpg",
+            "https://your-hosting-site.com/car-33.jpg", "https://your-hosting-site.com/car-6.jpg",
+            "https://your-hosting-site.com/car-21.jpg", "https://your-hosting-site.com/car-66.jpg",
+            "https://your-hosting-site.com/car-28.jpg", "https://your-hosting-site.com/car-7.jpg",
+            "https://your-hosting-site.com/car-26.jpg", "https://your-hosting-site.com/car-6b.jpg",
+            "https://your-hosting-site.com/car-45.jpg", "https://your-hosting-site.com/car-31.jpg",
+            "https://your-hosting-site.com/car-2.jpg", "https://your-hosting-site.com/car-18.jpg",
+            "https://your-hosting-site.com/car-27.jpg", "https://your-hosting-site.com/car-11.jpg",
+            "https://your-hosting-site.com/car-47.jpg", "https://your-hosting-site.com/car-15.jpg",
+            "https://your-hosting-site.com/car-19.jpg", "https://your-hosting-site.com/car-51.jpg",
+            "https://your-hosting-site.com/car-77.jpg", "https://your-hosting-site.com/car-4.jpg",
+            "https://your-hosting-site.com/car-24.jpg"
         ]
     }
     return pd.DataFrame(data)
 
-df = load_drivers()
+# 2. Sync Race Positions Database (Tracks milestones across reloads)
+POSITIONS_FILE = "race_positions.csv"
+def load_race_positions():
+    base_df = get_base_drivers()
+    if os.path.exists(POSITIONS_FILE):
+        pos_df = pd.read_csv(POSITIONS_FILE)
+        # Verify columns match
+        if all(col in pos_df.columns for col in ["Driver", "Pos_100", "Pos_150", "Pos_Final"]):
+            return pd.merge(base_df, pos_df[["Driver", "Pos_100", "Pos_150", "Pos_Final"]], on="Driver", how="left")
+    
+    # Defaults if file doesn't exist yet (Fallback to Starting_Pos)
+    base_df["Pos_100"] = base_df["Starting_Pos"]
+    base_df["Pos_150"] = base_df["Starting_Pos"]
+    base_df["Pos_Final"] = base_df["Starting_Pos"]
+    return base_df
 
-# 2. Synchronize CSV Database
+df = load_race_positions()
+
+# 3. Synchronize Participant CSV Database
 PICKS_FILE = "picks.csv"
 def load_picks():
     if os.path.exists(PICKS_FILE):
@@ -111,11 +110,11 @@ def load_picks():
 
 picks_df = load_picks()
 
-# Safe state management tracking numerical index instead of matching widget text key directly
+# Initialize dynamic navigation pointer safely in state
 if "tab_index" not in st.session_state:
     st.session_state["tab_index"] = 0
 
-# 3. Clean Single-Click Navigation Layout
+# 4. Clear Single-Click Navigation Layout
 tab_options = ["🏆 Standings", "📝 Visual Draft Board", "🏁 Live Field", "📋 Roster View", "📊 Popular Picks"]
 
 selected_tab = st.segmented_control(
@@ -125,7 +124,6 @@ selected_tab = st.segmented_control(
     label_visibility="collapsed"
 )
 
-# Keep the tracker up to date when the user manually clicks around
 if selected_tab:
     st.session_state["tab_index"] = tab_options.index(selected_tab)
 else:
@@ -144,29 +142,49 @@ if selected_tab == "🏆 Standings":
             user_picks = [row['P1'], row['P2'], row['P3'], row['P4'], row['P5'], row['P6'], row['P7'], row['P8']]
             user_drivers = df[df['Driver'].isin(user_picks)]
             
-            # Calculations
-            total_score = user_drivers['Current_Pos'].sum()
-            total_starting_positions = user_drivers['Starting_Pos'].sum()
+            # Continuous points summations
+            score_100 = user_drivers['Pos_100'].sum()
+            score_150 = user_drivers['Pos_150'].sum()
+            score_final = user_drivers['Pos_Final'].sum()
+            total_start_positions = user_drivers['Starting_Pos'].sum()
             
             leaderboard_data.append({
                 "Participant Name": row['Participant'],
-                "Final Points": int(total_score),
-                "Total Starting Positions": int(total_starting_positions)
+                "100 Laps Points": int(score_100),
+                "150 Laps Points": int(score_150),
+                "Final Points": int(score_final),
+                "Total Starting Positions": int(total_start_positions)
             })
             
-        # Convert to DataFrame and sort by Final Points ascending (lowest score wins)
-        lbl_df = pd.DataFrame(leaderboard_data).sort_values(by="Final Points", ascending=True).reset_index(drop=True)
+        master_df = pd.DataFrame(leaderboard_data)
         
-        # Inject Column 1: Participant's Place in the standings (1, 2, 3...)
-        lbl_df.insert(0, "Place", lbl_df.index + 1)
+        # Calculate intermediate ranks for independent sorting capabilities
+        master_df = master_df.sort_values(by="100 Laps Points", ascending=True).reset_index(drop=True)
+        master_df.insert(0, "100 Lap Place", master_df.index + 1)
         
-        # Display table with requested columns
+        master_df = master_df.sort_values(by="150 Laps Points", ascending=True).reset_index(drop=True)
+        master_df.insert(0, "150 Lap Place", master_df.index + 1)
+        
+        master_df = master_df.sort_values(by="Final Points", ascending=True).reset_index(drop=True)
+        master_df.insert(0, "Place", master_df.index + 1)
+        
+        # Rearrange to keep columns highly structured and readable
+        column_order = [
+            "Place", "100 Lap Place", "150 Lap Place", "Participant Name", 
+            "Final Points", "100 Laps Points", "150 Laps Points", "Total Starting Positions"
+        ]
+        master_df = master_df[column_order]
+
         st.dataframe(
-            lbl_df, 
+            master_df, 
             column_config={
-                "Place": st.column_config.NumberColumn("Place", format="%d"),
+                "Place": st.column_config.NumberColumn("Final Place", format="%d"),
+                "100 Lap Place": st.column_config.NumberColumn("100L Place", format="%d"),
+                "150 Lap Place": st.column_config.NumberColumn("150L Place", format="%d"),
                 "Participant Name": "Participant's Name",
                 "Final Points": "Final Points",
+                "100 Laps Points": "100L Points",
+                "150 Laps Points": "150L Points",
                 "Total Starting Positions": "Total Starting Positions"
             },
             use_container_width=True, 
@@ -177,7 +195,6 @@ if selected_tab == "🏆 Standings":
 elif selected_tab == "📝 Visual Draft Board":
     st.header("Interactive Draft Field")
     st.markdown("Select exactly **8 drivers**. Maximum **3 from Rows 1-3**.")
-    st.caption("💡 Tip: You can enter multiple times! Just give each submission a distinct Entry Name (e.g., 'Mark - Team A', 'Mark - Team B').")
     
     entry_name = st.text_input("Enter Roster Submission Name:", key="new_user_name", placeholder="e.g., Sarah - Lineup 1").strip()
     
@@ -247,23 +264,75 @@ elif selected_tab == "📝 Visual Draft Board":
         updated_df = pd.concat([picks_df, new_entry], ignore_index=True)
         updated_df.to_csv(PICKS_FILE, index=False)
         
-        # Safely wipe picks and point index to 0 ("🏆 Standings") without setting tied widget variables
         st.session_state["selected_pool"] = []
         st.session_state["tab_index"] = 0
-        
         st.rerun()
 
-# --- VIEW 3: LIVE FIELD RUNNING ORDER ---
+# --- VIEW 3: LIVE FIELD RUNNING ORDER (WITH LAP MILESTONE SCORING) ---
 elif selected_tab == "🏁 Live Field":
-    st.header("Actual Indy 500 Field")
-    for _, row in df.sort_values(by="Current_Pos").iterrows():
+    st.header("Actual Indy 500 Running Order")
+    
+    # 4-Box Entry Dashboard Panel for convenient updates during race intervals
+    with st.expander("🛠️ Live Race Timing Tower Management (Input Milestone Positions Here)"):
+        st.write("Update current track locations here. Click save at the bottom to re-rank the fields.")
+        
+        updated_rows = []
+        for idx, row in df.sort_values(by="Starting_Pos").iterrows():
+            st.markdown(f"**#{row['Car_Num']} - {row['Driver']}**")
+            box1, box2, box3, box4 = st.columns(4)
+            
+            with box1:
+                st.number_input("Grid Start", value=int(row['Starting_Pos']), disabled=True, key=f"start_v_{idx}")
+            with box2:
+                p100 = st.number_input("Pos @ 100 Laps", min_value=1, max_value=33, value=int(row['Pos_100']), key=f"p100_v_{idx}")
+            with box3:
+                p150 = st.number_input("Pos @ 150 Laps", min_value=1, max_value=33, value=int(row['Pos_150']), key=f"p150_v_{idx}")
+            with box4:
+                pfin = st.number_input("Finish Position", min_value=1, max_value=33, value=int(row['Pos_Final']), key=f"pfin_v_{idx}")
+                
+            updated_rows.append({
+                "Driver": row['Driver'],
+                "Pos_100": p100,
+                "Pos_150": p150,
+                "Pos_Final": pfin
+            })
+            st.write("---")
+            
+        if st.button("Save Race Positions", type="primary"):
+            save_df = pd.DataFrame(updated_rows)
+            save_df.to_csv(POSITIONS_FILE, index=False)
+            st.success("Track intervals securely recorded!")
+            st.rerun()
+
+    # Determine optimal display sorting method based on current highest completed milestone data
+    if df["Pos_Final"].is_monotonic_increasing and df["Pos_Final"].sum() == 561: 
+        sort_by_col = "Pos_Final"
+        display_title = "Final Track Finishing Order"
+    elif df["Pos_150"].sum() == 561 and not df["Pos_150"].isin([df["Starting_Pos"]]).all():
+        sort_by_col = "Pos_150"
+        display_title = "Running Order @ Lap 150"
+    elif df["Pos_100"].sum() == 561 and not df["Pos_100"].isin([df["Starting_Pos"]]).all():
+        sort_by_col = "Pos_100"
+        display_title = "Running Order @ Lap 100"
+    else:
+        sort_by_col = "Starting_Pos"
+        display_title = "Official Initial Grid Ranks"
+
+    st.subheader(display_title)
+    
+    for _, row in df.sort_values(by=sort_by_col, ascending=True).iterrows():
         with st.container(border=True):
-            col1, col2, col3 = st.columns([1.2, 2.8, 4.0])
-            col1.metric("Live Pos", int(row['Current_Pos']))
-            col1.caption(f"Started: P{row['Starting_Pos']}")
-            col2.subheader(row['Driver'])
-            col2.caption(f"#{row['Car_Num']} | {row['Team']}\nQual Speed: {row['Qual_Speed']}")
-            col3.image(row['Car_Pic'])
+            col1, col2, col3 = st.columns([1.5, 2.5, 4.0])
+            with col1:
+                st.metric("Current Order", int(row[sort_by_col]))
+                st.caption(f"Grid Start: P{row['Starting_Pos']}")
+            with col2:
+                st.subheader(row['Driver'])
+                st.caption(f"#{row['Car_Num']} | {row['Team']}")
+                # Showcase 4-box status cleanly on cards
+                st.markdown(f"🏁 **P{row['Pos_100']}** (100L) | **P{row['Pos_150']}** (150L) | **P{row['Pos_Final']}** (Fin)")
+            with col3:
+                st.image(row['Car_Pic'])
 
 # --- VIEW 4: ROSTER VIEW ---
 elif selected_tab == "📋 Roster View":
@@ -275,14 +344,14 @@ elif selected_tab == "📋 Roster View":
         u_row = picks_df[picks_df['Participant'] == user].iloc[0]
         u_picks = [u_row['P1'], u_row['P2'], u_row['P3'], u_row['P4'], u_row['P5'], u_row['P6'], u_row['P7'], u_row['P8']]
         
-        u_df = df[df['Driver'].isin(u_picks)].sort_values(by="Current_Pos")
-        st.metric("Roster Live Score", int(u_df['Current_Pos'].sum()))
+        u_df = df[df['Driver'].isin(u_picks)].sort_values(by="Pos_Final")
+        st.metric("Roster Live Score", int(u_df['Pos_Final'].sum()))
         
         for _, row in u_df.iterrows():
             with st.container(border=True):
                 col1, col2 = st.columns([4.0, 4.0])
-                col1.markdown(f"**Live Pos {int(row['Current_Pos'])}**: {row['Driver']} *(#{row['Car_Num']})*")
-                col1.caption(f"Grid Start: P{row['Starting_Pos']} | Speed: {row['Qual_Speed']}")
+                col1.markdown(f"**Final Ranks {int(row['Pos_Final'])}**: {row['Driver']} *(#{row['Car_Num']})*")
+                col1.caption(f"Grid Start: P{row['Starting_Pos']} | 100L: P{row['Pos_100']} | 150L: P{row['Pos_150']}")
                 with col2:
                     st.image(row['Car_Pic'])
 
@@ -299,14 +368,14 @@ elif selected_tab == "📊 Popular Picks":
                 if p in driver_pick_map:
                     driver_pick_map[p].append(p_name)
                     
-        for _, row in df.iterrows():
+        for _, row in df.sort_values(by="Starting_Pos").iterrows():
             d_name = row['Driver']
             choosing_p = driver_pick_map[d_name]
             with st.container(border=True):
                 col1, col2 = st.columns([4.0, 4.0])
                 with col1:
                     st.subheader(d_name)
-                    st.caption(f"Car #{row['Car_Num']} | Start: P{row['Starting_Pos']} ({row['Qual_Speed']})")
+                    st.caption(f"Car #{row['Car_Num']} | Start: P{row['Starting_Pos']}")
                     if choosing_p:
                         st.markdown(f"**Drafted By:** {', '.join(choosing_p)}")
                     else:
@@ -317,6 +386,20 @@ elif selected_tab == "📊 Popular Picks":
 # --- SYSTEM ADMIN COMMAND DECK ---
 st.write("---")
 with st.expander("🛠️ Admin Command Deck (Edit / Delete Entry Controls)"):
+    
+    # --- RESET SECTION FOR TESTING ---
+    st.subheader("Reset Race Milestone Positions")
+    st.markdown("Use this during testing to instantly clear all manual inputs for Lap 100, Lap 150, and Final standings, resetting everyone back to their grid starting positions.")
+    
+    if st.button("Clear Milestone Data & Reset Field", type="secondary"):
+        if os.path.exists(POSITIONS_FILE):
+            os.remove(POSITIONS_FILE)  # Deleting the file forces the app to regenerate default starting grids
+        st.success("All test data cleared! Race milestones have been reset to grid starting order.")
+        st.rerun()
+        
+    st.write("---")
+
+    # --- EXISTENT ROSTER DELETION ---
     if picks_df.empty:
         st.info("No participant records currently stored to edit.")
     else:
