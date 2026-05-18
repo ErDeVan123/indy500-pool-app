@@ -283,7 +283,7 @@ elif selected_tab == "📝 Visual Draft Board":
         new_entry = pd.DataFrame([{
             "Participant": entry_name,
             "P1": current_picks[0], "P2": current_picks[1], "P3": current_picks[2], "P4": current_picks[3],
-            "P5": current_picks[4], "P6": current_picks[5], "P7": current_picks[6], "P7": current_picks[6], "P8": current_picks[7]
+            "P5": current_picks[4], "P6": current_picks[5], "P7": current_picks[6], "P8": current_picks[7]
         }])
         updated_df = pd.concat([picks_df, new_entry], ignore_index=True)
         updated_df.to_csv(PICKS_FILE, index=False)
@@ -393,6 +393,31 @@ elif selected_tab == "📋 Roster View":
         
         st.metric("Roster Live Score Sum", int(u_df[sort_basis].sum()))
         
+        # --- ROSTER WIDE MULTI-DRIVER LINE GRAPH ---
+        st.subheader("Lineup Milestone Progression Tracker")
+        chart_records = []
+        milestones = ["Start", "Lap 100", "Lap 150", "Finish"]
+        
+        for _, row in u_df.iterrows():
+            # Only graph metrics that have been updated past 0
+            points = [row['Starting_Pos'], row['Pos_100'], row['Pos_150'], row['Pos_Final']]
+            for m_label, pt in zip(milestones, points):
+                if m_label == "Start" or pt != 0:
+                    chart_records.append({
+                        "Milestone": m_label,
+                        "Position": pt,
+                        "Driver": f"{row['Driver']} (#{row['Car_Num']})"
+                    })
+                    
+        if chart_records:
+            chart_df = pd.DataFrame(chart_records).pivot(index="Milestone", columns="Driver", values="Position")
+            # Enforce timeline execution axis sorting
+            chart_df = chart_df.reindex(milestones, axis=0).dropna(how='all')
+            st.line_chart(chart_df, y_label="Track Position Rank", x_label="Race Milestone")
+            st.caption("💡 Tip: Lower line vectors indicate superior tracking performance closer to P1.")
+            
+        st.write("---")
+        
         for _, row in u_df.iterrows():
             with st.container(border=True):
                 col1, col2 = st.columns([4.0, 4.0])
@@ -426,6 +451,20 @@ elif selected_tab == "📊 Popular Picks":
                         st.markdown(f"**Drafted By:** {', '.join(choosing_p)}")
                     else:
                         st.markdown("*Nobody has drafted this driver yet.*")
+                        
+                    # --- INDIVIDUAL DRIVER PROFILE METRIC CHART ---
+                    m_labels = ["Start", "Lap 100", "Lap 150", "Finish"]
+                    m_vals = [row['Starting_Pos'], row['Pos_100'], row['Pos_150'], row['Pos_Final']]
+                    
+                    # Package active telemetry points safely
+                    driver_history = []
+                    for lbl, val in zip(m_labels, m_vals):
+                        if lbl == "Start" or val != 0:
+                            driver_history.append({"Milestone": lbl, "Position": val})
+                            
+                    if len(driver_history) > 1:
+                        single_driver_df = pd.DataFrame(driver_history).set_index("Milestone")
+                        st.line_chart(single_driver_df, height=175, y_label="Track Position", x_label="Milestone")
                 with col2:
                     st.image(row['Car_Pic'])
 
