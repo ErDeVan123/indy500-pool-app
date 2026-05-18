@@ -6,6 +6,25 @@ import os
 st.set_page_config(page_title="Indy 500 Pool Engine", layout="centered")
 st.title("🏎️ Indy 500 Live Pool Tracker")
 
+# Custom CSS to force car images to fill the container height, prevent distortion, and center vertically
+st.markdown("""
+    <style>
+    /* Target images inside columns to center vertically and fill height */
+    [data-testid="stImage"] img {
+        height: 110px !important;
+        object-fit: cover !important;
+        border-radius: 6px;
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    /* Ensure the column layout visually balances the text height */
+    [data-testid="stHorizontalBlock"] {
+        align-items: center !important;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
 # 1. Official Starting Grid Data (Full 33-Driver Field)
 @st.cache_data(ttl=5)
 def load_drivers():
@@ -37,8 +56,8 @@ def load_drivers():
             "232.105 mph", "231.994 mph", "231.785 mph", "231.654 mph", "231.411 mph", 
             "231.202 mph", "231.004 mph", "230.985 mph", "230.841 mph", "230.652 mph", 
             "230.414 mph", "230.201 mph", "230.114 mph", "229.984 mph", "229.814 mph", 
-            "229.654 mph", "229.412 mph", "229.214 mph", "229.004 mph", "228.841 mph", 
-            "228.651 mph", "228.411 mph", "228.104 mph"
+            "229.654 mph", "229.412 mph", "229.412 mph", "229.214 mph", "229.004 mph", 
+            "228.841 mph", "228.651 mph", "228.411 mph"
         ],
         "Tier_1_3": [
             "Yes","Yes","Yes","Yes","Yes","Yes","Yes","Yes","Yes","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No"
@@ -100,7 +119,6 @@ if "active_tab" not in st.session_state:
 tab_options = ["🏆 Standings", "📝 Visual Draft Board", "🏁 Live Field", "📋 Roster View", "📊 Popular Picks"]
 selected_tab = st.radio("Navigation Menu", options=tab_options, index=st.session_state["active_tab"], horizontal=True, label_visibility="collapsed")
 
-# Match state index with selections to prevent navigation sync lock loops
 st.session_state["active_tab"] = tab_options.index(selected_tab)
 
 st.write("---")
@@ -144,7 +162,7 @@ elif selected_tab == "📝 Visual Draft Board":
         is_selected = d_name in st.session_state["selected_pool"]
         
         with st.container(border=True):
-            col1, col2, col3 = st.columns([1.5, 3, 2])
+            col1, col2, col3 = st.columns([1.5, 3, 2.5]) # Slightly broadened image column weight
             with col1:
                 st.write(f"**Start Pos: {row['Starting_Pos']}**")
                 st.caption(f"⏱️ {row['Qual_Speed']}")
@@ -164,7 +182,7 @@ elif selected_tab == "📝 Visual Draft Board":
                         st.session_state["selected_pool"].remove(d_name)
                         st.rerun()
             with col3:
-                st.image(row['Car_Pic'], use_container_width=True)
+                st.image(row['Car_Pic'])
 
     st.write("---")
     st.subheader("Roster Validation Dashboard")
@@ -210,12 +228,12 @@ elif selected_tab == "🏁 Live Field":
     st.header("Actual Indy 500 Field")
     for _, row in df.sort_values(by="Current_Pos").iterrows():
         with st.container(border=True):
-            col1, col2, col3 = st.columns([1.5, 3, 2])
+            col1, col2, col3 = st.columns([1.5, 3, 2.5])
             col1.metric("Live Pos", int(row['Current_Pos']))
             col1.caption(f"Started: P{row['Starting_Pos']}")
             col2.subheader(row['Driver'])
             col2.caption(f"#{row['Car_Num']} | {row['Team']}\nQual Speed: {row['Qual_Speed']}")
-            col3.image(row['Car_Pic'], use_container_width=True)
+            col3.image(row['Car_Pic'])
 
 # --- VIEW 4: ROSTER VIEW ---
 elif selected_tab == "📋 Roster View":
@@ -232,10 +250,10 @@ elif selected_tab == "📋 Roster View":
         
         for _, row in u_df.iterrows():
             with st.container(border=True):
-                col1, col2 = st.columns([4, 2])
+                col1, col2 = st.columns([3.5, 2.5])
                 col1.markdown(f"**Live Pos {int(row['Current_Pos'])}**: {row['Driver']} *(#{row['Car_Num']})*")
                 col1.caption(f"Grid Start: P{row['Starting_Pos']} | Speed: {row['Qual_Speed']}")
-                col2.image(row['Car_Pic'], use_container_width=True)
+                st.image(row['Car_Pic'])
 
 # --- VIEW 5: POPULAR PICKS METRICS ---
 elif selected_tab == "📊 Popular Picks":
@@ -254,7 +272,7 @@ elif selected_tab == "📊 Popular Picks":
             d_name = row['Driver']
             choosing_p = driver_pick_map[d_name]
             with st.container(border=True):
-                col1, col2 = st.columns([4, 2])
+                col1, col2 = st.columns([3.5, 2.5])
                 with col1:
                     st.subheader(d_name)
                     st.caption(f"Car #{row['Car_Num']} | Start: P{row['Starting_Pos']} ({row['Qual_Speed']})")
@@ -263,7 +281,7 @@ elif selected_tab == "📊 Popular Picks":
                     else:
                         st.markdown("*Nobody has drafted this driver yet.*")
                 with col2:
-                    st.image(row['Car_Pic'], use_container_width=True)
+                    st.image(row['Car_Pic'])
 
 # --- SYSTEM ADMIN COMMAND DECK ---
 st.write("---")
