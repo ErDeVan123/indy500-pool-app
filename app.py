@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import altair as alt
 import os
 
 # Page layout setup
@@ -370,7 +371,7 @@ elif selected_tab == "🏁 Live Field":
                 st.caption(f"#{row['Car_Num']} | {row['Team']}")
                 st.markdown(f"🏁 **P{row['Pos_100']}** (100L) | **P{row['Pos_150']}** (150L) | **P{row['Pos_Final']}** (Fin)")
                 
-                # --- LIVE FIELD INDIVIDUAL DRIVER PROFILE CHART (INVERTED Y) ---
+                # --- LIVE FIELD INDIVIDUAL DRIVER PROFILE CHART (ALTAIR FIXED) ---
                 m_labels = ["Start", "Lap 100", "Lap 150", "Finish"]
                 m_vals = [row['Starting_Pos'], row['Pos_100'], row['Pos_150'], row['Pos_Final']]
                 
@@ -380,8 +381,12 @@ elif selected_tab == "🏁 Live Field":
                         driver_history.append({"Milestone": lbl, "Position": val})
                         
                 if len(driver_history) > 1:
-                    single_driver_df = pd.DataFrame(driver_history).set_index("Milestone")
-                    st.line_chart(single_driver_df, height=175, y_label="Track Position", x_label="Milestone", y_config={"domain": [33, 1]})
+                    single_driver_df = pd.DataFrame(driver_history)
+                    chart = alt.Chart(single_driver_df).mark_line(point=True).encode(
+                        x=alt.X('Milestone:N', sort=m_labels, title="Milestone"),
+                        y=alt.Y('Position:Q', scale=alt.Scale(domain=[1, 33], reverse=True), title="Track Position")
+                    ).properties(height=175)
+                    st.altair_chart(chart, use_container_width=True)
             with col2:
                 st.image(row['Car_Pic'])
 
@@ -398,7 +403,7 @@ elif selected_tab == "📋 Roster View":
         sort_basis = "Pos_Final" if df["Pos_Final"].sum() == 561 else ("Pos_150" if df["Pos_150"].sum() == 561 else ("Pos_100" if df["Pos_100"].sum() == 561 else "Starting_Pos"))
         u_df = df[df['Driver'].isin(u_picks)].sort_values(by=sort_basis)
         
-        # --- ROSTER WIDE MULTI-DRIVER LINE GRAPH (INVERTED Y) ---
+        # --- ROSTER WIDE MULTI-DRIVER LINE GRAPH (ALTAIR FIXED) ---
         st.subheader("Lineup Milestone Progression Tracker")
         chart_records = []
         milestones = ["Start", "Lap 100", "Lap 150", "Finish"]
@@ -414,9 +419,13 @@ elif selected_tab == "📋 Roster View":
                     })
                     
         if chart_records:
-            chart_df = pd.DataFrame(chart_records).pivot(index="Milestone", columns="Driver", values="Position")
-            chart_df = chart_df.reindex(milestones, axis=0).dropna(how='all')
-            st.line_chart(chart_df, y_label="Track Position Rank", x_label="Race Milestone", y_config={"domain": [33, 1]})
+            chart_df = pd.DataFrame(chart_records)
+            multi_chart = alt.Chart(chart_df).mark_line(point=True).encode(
+                x=alt.X('Milestone:N', sort=milestones, title="Race Milestone"),
+                y=alt.Y('Position:Q', scale=alt.Scale(domain=[1, 33], reverse=True), title="Track Position Rank"),
+                color='Driver:N'
+            ).properties(height=350)
+            st.altair_chart(multi_chart, use_container_width=True)
             
         st.write("---")
         
@@ -454,7 +463,7 @@ elif selected_tab == "📊 Popular Picks":
                     else:
                         st.markdown("*Nobody has drafted this driver yet.*")
                         
-                    # --- POPULAR PICKS INDIVIDUAL DRIVER PROFILE CHART (INVERTED Y) ---
+                    # --- POPULAR PICKS INDIVIDUAL DRIVER PROFILE CHART (ALTAIR FIXED) ---
                     m_labels = ["Start", "Lap 100", "Lap 150", "Finish"]
                     m_vals = [row['Starting_Pos'], row['Pos_100'], row['Pos_150'], row['Pos_Final']]
                     
@@ -464,8 +473,12 @@ elif selected_tab == "📊 Popular Picks":
                             driver_history.append({"Milestone": lbl, "Position": val})
                             
                     if len(driver_history) > 1:
-                        single_driver_df = pd.DataFrame(driver_history).set_index("Milestone")
-                        st.line_chart(single_driver_df, height=175, y_label="Track Position", x_label="Milestone", y_config={"domain": [33, 1]})
+                        single_driver_df = pd.DataFrame(driver_history)
+                        chart = alt.Chart(single_driver_df).mark_line(point=True).encode(
+                            x=alt.X('Milestone:N', sort=m_labels, title="Milestone"),
+                            y=alt.Y('Position:Q', scale=alt.Scale(domain=[1, 33], reverse=True), title="Track Position")
+                        ).properties(height=175)
+                        st.altair_chart(chart, use_container_width=True)
                 with col2:
                     st.image(row['Car_Pic'])
 
