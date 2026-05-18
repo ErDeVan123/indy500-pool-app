@@ -63,7 +63,7 @@ def load_drivers():
             "Yes","Yes","Yes","Yes","Yes","Yes","Yes","Yes","Yes","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No"
         ],
         "Car_Pic": [
-            "https://your-hosting-site.com/car-10.jpg",  # 1. Alex Palou
+            "https://www.indycar.com/-/media/IndyCar/Cars/2026/IndyCar-Series/Liveries/Indy500/10-DHL-SS.png?dp=05-11-2026T06:02PM",  # 1. Alex Palou
             "https://your-hosting-site.com/car-20.jpg",  # 2. Alexander Rossi
             "https://your-hosting-site.com/car-12.jpg",  # 3. David Malukas
             "https://your-hosting-site.com/car-60.jpg",  # 4. Felix Rosenqvist
