@@ -2,14 +2,13 @@ import streamlit as st
 import pandas as pd
 import os
 
-# Page styling for a clean, visual mobile layout
-st.set_page_config(page_title="Indy 500 Live Pool", layout="centered")
+# Page configurations for a highly visual layout
+st.set_page_config(page_title="Indy 500 Pool Engine", layout="centered")
 st.title("🏎️ Indy 500 Live Pool Tracker")
 
-# 1. Official 2026 Indy 500 Starting Grid Data
+# 1. Official 2026 Indy 500 Starting Grid
 @st.cache_data(ttl=5)
 def load_drivers():
-    # Complete, locked-in 33-driver field for the 110th Running
     data = {
         "Current_Pos": [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33],
         "Car_Num": [10,20,12,60,14,5,8,23,3,9,76,75,33,6,21,66,28,7,26,6,45,31,2,18,27,11,47,15,19,51,77,4,24],
@@ -32,28 +31,28 @@ def load_drivers():
             "Juncos Hollinger", "A.J. Foyt Racing", "Dreyer & Reinbold"
         ],
         "Tier_1_3": ["Yes","Yes","Yes","Yes","Yes","Yes","Yes","Yes","Yes","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No"],
-        "Driver_Pic": ["https://picsum.photos/id/101/100/100"] * 33,  # Replace with actual image URLs
-        "Car_Pic": ["https://picsum.photos/id/102/100/100"] * 33     # Replace with actual image URLs
+        "Car_Pic": ["https://picsum.photos/id/102/100/60"] * 33 # Standard image placeholder for vehicle livery
     }
     return pd.DataFrame(data)
 
 df = load_drivers()
 
-# 2. Manage Roster Picks
+# 2. Sync Active Draft Database
 PICKS_FILE = "picks.csv"
 if os.path.exists(PICKS_FILE):
     picks_df = pd.read_csv(PICKS_FILE)
 else:
     picks_df = pd.DataFrame(columns=["Participant", "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8"])
 
-# 3. Navigation
-tab1, tab2, tab3, tab4 = st.tabs(["🏆 Standings", "📝 Interactive Draft Board", "🏁 Live Field", "📋 Roster View"])
+# 3. Dynamic App Interface Tabs
+tabs = st.tabs(["🏆 Standings", "📝 Visual Draft Board", "🏁 Live Field", "📋 Roster View", "📊 Popular Picks"])
+tab1, tab2, tab3, tab4, tab5 = tabs
 
-# --- TAB 1: STANDINGS ---
+# --- TAB 1: OVERALL STANDINGS ---
 with tab1:
     st.header("Overall Standings")
     if picks_df.empty:
-        st.info("No entries yet! Jump over to the 'Interactive Draft Board' tab to register your picks.")
+        st.info("No pool sheets logged. Head to the 'Visual Draft Board' to make selections!")
     else:
         leaderboard_data = []
         for _, row in picks_df.iterrows():
@@ -72,102 +71,145 @@ with tab1:
         lbl_df = pd.DataFrame(leaderboard_data).sort_values(by="Live Score", ascending=True)
         st.dataframe(lbl_df, use_container_width=True, hide_index=True)
 
-# --- TAB 2: INTERACTIVE DRAFT BOARD ---
+# --- TAB 2: VISUAL DRAFT BOARD ---
 with tab2:
-    st.header("Draft Your 8 Drivers")
-    st.markdown("Tap or check the box next to **8 drivers** from the entire 33-car field below.")
+    st.header("Interactive Draft Field")
+    st.markdown("Select exactly **8 drivers**. Your choices will highlight in green.")
     
-    # Text input for participant name outside the main selection loop
-    entry_name = st.text_input("Enter Your Name:", key="draft_entry_name").strip()
+    entry_name = st.text_input("Enter Your Name:", key="new_user_name").strip()
     
-    st.write("---")
-    
-    # Dictionary to keep track of checkboxes
-    selected_drivers = []
-    
-    # Create rows layout of 33 drivers
-    for idx, row in df.iterrows():
-        driver_name = row['Driver']
-        is_top_tier = "⭐️ Top 3 Rows" if row['Tier_1_3'] == 'Yes' else "Field"
-        label_text = f"Pos {row['Current_Pos']} | #{row['Car_Num']} {driver_name} ({is_top_tier})"
+    if "selected_pool" not in st.session_state:
+        st.session_state["selected_pool"] = []
         
-        # Unique styling wrapper if selected to highlight it
-        if driver_name in st.session_state.get('temp_selections', []):
-            # Simulated Highlight styling via Streamlit components
-            with st.container(border=True):
-                picked = st.checkbox(f"🟢 SELECTED: {label_text}", key=f"pick_{idx}", value=True)
-        else:
-            with st.container():
-                picked = st.checkbox(label_text, key=f"pick_{idx}", value=False)
-                
-        if picked:
-            selected_drivers.append(driver_name)
-            
-    # Save selection state dynamically
-    st.session_state['temp_selections'] = selected_drivers
-    
-    # Real-time Roster Stats Counters
-    num_selected = len(selected_drivers)
-    selected_top_tier = df[df['Driver'].isin(selected_drivers) & (df['Tier_1_3'] == 'Yes')].shape[0]
-    
     st.write("---")
-    st.subheader("Your Roster Status Dashboard")
     
-    # Visual metrics counters
+    # Loop across all 33 drivers matching the Live Grid template
+    for idx, row in df.iterrows():
+        d_name = row['Driver']
+        is_selected = d_name in st.session_state["selected_pool"]
+        
+        # Container presentation matches live feed card layout
+        with st.container(border=True):
+            col1, col2, col3 = st.columns([1, 3, 2])
+            
+            with col1:
+                st.write(f"**Grid**\n#{row['Car_Num']}")
+                if row['Tier_1_3'] == "Yes":
+                    st.caption("⭐ Row 1-3")
+            
+            with col2:
+                st.subheader(d_name)
+                st.caption(row['Team'])
+                
+                # Checkbox inside card to handle highlighting toggle
+                box_label = "🟢 Selected" if is_selected else "Select Driver"
+                if st.checkbox(box_label, key=f"draft_check_{idx}", value=is_selected):
+                    if d_name not in st.session_state["selected_pool"]:
+                        st.session_state["selected_pool"].append(d_name)
+                        st.rerun()
+                else:
+                    if d_name in st.session_state["selected_pool"]:
+                        st.session_state["selected_pool"].remove(d_name)
+                        st.rerun()
+                        
+            with col3:
+                st.image(row['Car_Pic'], use_container_width=True)
+
+    st.write("---")
+    st.subheader("Roster Overview")
+    
+    current_picks = st.session_state["selected_pool"]
+    count_picked = len(current_picks)
+    count_tier = df[df['Driver'].isin(current_picks) & (df['Tier_1_3'] == 'Yes')].shape[0]
+    
     c1, c2 = st.columns(2)
-    c1.metric("Drivers Picked (Need 8)", f"{num_selected} / 8")
-    c2.metric("Top Tier Selected (Max 3)", f"{selected_top_tier} / 3")
+    c1.metric("Drivers Locked", f"{count_picked} / 8")
+    c2.metric("Top Row Drivers", f"{count_tier} / 3")
     
-    # Form submission validation button
-    if st.button("Lock In & Submit Lineup", type="primary"):
+    if st.button("Submit Official Roster Lineup", type="primary"):
         if not entry_name:
-            st.error("Submission Denied: Please enter your name at the top of the board.")
-        elif num_selected != 8:
-            st.error(f"Submission Denied: You must select exactly 8 drivers. You currently have {num_selected} selected.")
+            st.error("Error: Please enter an Entry Name at the top.")
+        elif count_picked != 8:
+            st.error(f"Error: Lineups must have exactly 8 choices. You currently have selected {count_picked}.")
         elif entry_name in picks_df['Participant'].values:
-            st.error(f"Submission Denied: An entry under '{entry_name}' has already been drafted.")
+            st.error(f"Error: The name '{entry_name}' is already registered.")
         else:
-            # Roster rule logic enforcement
             new_entry = pd.DataFrame([{
                 "Participant": entry_name,
-                "P1": selected_drivers[0], "P2": selected_drivers[1], "P3": selected_drivers[2], "P4": selected_drivers[3],
-                "P5": selected_drivers[4], "P6": selected_drivers[5], "P7": selected_drivers[6], "P8": selected_drivers[7]
+                "P1": current_picks[0], "P2": current_picks[1], "P3": current_picks[2], "P4": current_picks[3],
+                "P5": current_picks[4], "P6": current_picks[5], "P7": current_picks[6], "P8": current_picks[7]
             }])
+            updated_df = pd.concat([picks_df, new_entry], ignore_index=True)
+            updated_df.to_csv(PICKS_FILE, index=False)
             
-            updated_picks = pd.concat([picks_df, new_entry], ignore_index=True)
-            updated_picks.to_csv(PICKS_FILE, index=False)
-            
-            if selected_top_tier > 3:
-                st.warning(f"Roster saved, but you are marked DQ! You drafted {selected_top_tier} drivers from Rows 1-3 (Limit is 3).")
-            else:
-                st.success(f"Perfect! {entry_name}'s lineup is successfully logged and active!")
-                
-            # Clear data out for next participant
-            st.session_state['temp_selections'] = []
+            st.success(f"Success! {entry_name}'s line-up is officially live.")
+            st.session_state["selected_pool"] = []
             st.rerun()
 
 # --- TAB 3: LIVE FIELD ---
 with tab3:
-    st.header("Actual Indy 500 Field")
+    st.header("Actual Indy 500 Running Field")
     for _, row in df.sort_values(by="Current_Pos").iterrows():
         with st.container(border=True):
-            col1, col2 = st.columns([1, 4])
+            col1, col2, col3 = st.columns([1, 3, 2])
             col1.metric("Pos", int(row['Current_Pos']))
             col2.subheader(row['Driver'])
             col2.caption(f"Car #{row['Car_Num']} | {row['Team']}")
+            col3.image(row['Car_Pic'], use_container_width=True)
 
 # --- TAB 4: ROSTER VIEW ---
 with tab4:
-    st.header("Review Participant Choices")
+    st.header("Roster Inspection Profiles")
     if picks_df.empty:
-        st.info("No participants submitted yet.")
+        st.info("No active rosters to inspect.")
     else:
-        user = st.selectbox("Select Roster:", picks_df['Participant'].tolist())
+        user = st.selectbox("Choose Profile:", picks_df['Participant'].tolist())
         u_row = picks_df[picks_df['Participant'] == user].iloc[0]
         u_picks = [u_row['P1'], u_row['P2'], u_row['P3'], u_row['P4'], u_row['P5'], u_row['P6'], u_row['P7'], u_row['P8']]
         
         u_df = df[df['Driver'].isin(u_picks)].sort_values(by="Current_Pos")
-        st.metric("Total Points", int(u_df['Current_Pos'].sum()))
+        st.metric("Roster Score Total", int(u_df['Current_Pos'].sum()))
         
         for _, row in u_df.iterrows():
-            st.markdown(f"**Position {int(row['Current_Pos'])}**: {row['Driver']} *(Car #{row['Car_Num']})*")
+            with st.container(border=True):
+                col1, col2 = st.columns([4, 2])
+                col1.markdown(f"**Track Position {int(row['Current_Pos'])}**: {row['Driver']} *(#{row['Car_Num']})*")
+                col2.image(row['Car_Pic'], use_container_width=True)
+
+# --- TAB 5: POPULAR PICKS METRICS ---
+with tab5:
+    st.header("Participant Pick Summary")
+    st.markdown("See which participants drafted each driver.")
+    
+    if picks_df.empty:
+        st.info("No calculations available until picks are drafted.")
+    else:
+        # Create a dictionary mapping driver name to list of participants who selected them
+        driver_pick_map = {driver: [] for driver in df['Driver'].tolist()}
+        
+        for _, row in picks_df.iterrows():
+            participant = row['Participant']
+            user_picks = [row['P1'], row['P2'], row['P3'], row['P4'], row['P5'], row['P6'], row['P7'], row['P8']]
+            for pick in user_picks:
+                if pick in driver_pick_map:
+                    driver_pick_map[pick].append(participant)
+                    
+        # Display each driver alongside the roster list of people who picked them
+        for _, row in df.iterrows():
+            d_name = row['Driver']
+            choosing_participants = driver_pick_map[d_name]
+            
+            with st.container(border=True):
+                col1, col2 = st.columns([4, 2])
+                with col1:
+                    st.subheader(d_name)
+                    st.caption(f"Car #{row['Car_Num']} | {row['Team']}")
+                    
+                    if choosing_participants:
+                        # Renders participant names cleanly separated by commas
+                        st.markdown(f"**Drafted By:** {', '.join(choosing_participants)}")
+                    else:
+                        st.markdown("*Nobody has drafted this driver yet.*")
+                        
+                with col2:
+                    st.image(row['Car_Pic'], use_container_width=True)
