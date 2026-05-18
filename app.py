@@ -56,7 +56,7 @@ def load_drivers():
             "232.105 mph", "231.994 mph", "231.785 mph", "231.654 mph", "231.411 mph", 
             "231.202 mph", "231.004 mph", "230.985 mph", "230.841 mph", "230.652 mph", 
             "230.414 mph", "230.201 mph", "230.114 mph", "229.984 mph", "229.814 mph", 
-            "229.654 mph", "229.412 mph", "229.412 mph", "229.214 mph", "229.004 mph", 
+            "229.654 mph", "229.654 mph", "229.412 mph", "229.214 mph", "229.004 mph", 
             "228.841 mph", "228.651 mph", "228.411 mph"
         ],
         "Tier_1_3": [
@@ -111,18 +111,25 @@ def load_picks():
 
 picks_df = load_picks()
 
-# Initialize dynamic navigation pointer cleanly in state
-if "active_tab" not in st.session_state:
-    st.session_state["active_tab"] = "🏆 Standings"
+# Safe state management tracking numerical index instead of matching widget text key directly
+if "tab_index" not in st.session_state:
+    st.session_state["tab_index"] = 0
 
-# 3. Streamlined One-Click Navigation Menu
+# 3. Clean Single-Click Navigation Layout
 tab_options = ["🏆 Standings", "📝 Visual Draft Board", "🏁 Live Field", "📋 Roster View", "📊 Popular Picks"]
+
 selected_tab = st.segmented_control(
     "Navigation Menu", 
     options=tab_options, 
-    key="active_tab", 
+    default=tab_options[st.session_state["tab_index"]],
     label_visibility="collapsed"
 )
+
+# Keep the tracker up to date when the user manually clicks around
+if selected_tab:
+    st.session_state["tab_index"] = tab_options.index(selected_tab)
+else:
+    selected_tab = tab_options[st.session_state["tab_index"]]
 
 st.write("---")
 
@@ -240,9 +247,9 @@ elif selected_tab == "📝 Visual Draft Board":
         updated_df = pd.concat([picks_df, new_entry], ignore_index=True)
         updated_df.to_csv(PICKS_FILE, index=False)
         
-        # FIX: Explicitly scrub choices and force widget memory back to Standings safely
+        # Safely wipe picks and point index to 0 ("🏆 Standings") without setting tied widget variables
         st.session_state["selected_pool"] = []
-        st.session_state["active_tab"] = "🏆 Standings"
+        st.session_state["tab_index"] = 0
         
         st.rerun()
 
