@@ -63,7 +63,7 @@ def load_drivers():
             "Yes","Yes","Yes","Yes","Yes","Yes","Yes","Yes","Yes","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No"
         ],
         "Car_Pic": [
-            "https://www.indycar.com/-/media/IndyCar/Cars/2026/IndyCar-Series/Liveries/Indy500/10-DHL-SS.png?dp=05-11-2026T06:02PM",  # 1. Alex Palou
+            "https://your-hosting-site.com/car-10.jpg",  # 1. Alex Palou
             "https://your-hosting-site.com/car-20.jpg",  # 2. Alexander Rossi
             "https://your-hosting-site.com/car-12.jpg",  # 3. David Malukas
             "https://your-hosting-site.com/car-60.jpg",  # 4. Felix Rosenqvist
@@ -240,10 +240,10 @@ elif selected_tab == "📝 Visual Draft Board":
         updated_df = pd.concat([picks_df, new_entry], ignore_index=True)
         updated_df.to_csv(PICKS_FILE, index=False)
         
+        # FIX: Explicitly scrub choices and force widget memory back to Standings safely
         st.session_state["selected_pool"] = []
-        # Update session state key directly to skip the tab bug on forward auto-routing
         st.session_state["active_tab"] = "🏆 Standings"
-        st.success("Lineup successfully validated and deployed!")
+        
         st.rerun()
 
 # --- VIEW 3: LIVE FIELD RUNNING ORDER ---
