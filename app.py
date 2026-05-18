@@ -72,7 +72,7 @@ def get_base_drivers():
             "Yes","Yes","Yes","Yes","Yes","Yes","Yes","Yes","Yes","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No"
         ],
         "Car_Pic": [
-            "https://your-hosting-site.com/car-10.jpg", "https://your-hosting-site.com/car-20.jpg",
+            "https://www.indycar.com/-/media/IndyCar/Cars/2026/IndyCar-Series/Liveries/Indy500/10-DHL-SS.png?dp=05-11-2026T06:02PM", "https://your-hosting-site.com/car-20.jpg",
             "https://your-hosting-site.com/car-12.jpg", "https://your-hosting-site.com/car-60.jpg",
             "https://your-hosting-site.com/car-14.jpg", "https://your-hosting-site.com/car-5.jpg",
             "https://your-hosting-site.com/car-8.jpg", "https://your-hosting-site.com/car-23.jpg",
