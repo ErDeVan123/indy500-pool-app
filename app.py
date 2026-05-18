@@ -381,7 +381,7 @@ elif selected_tab == "🏁 Live Field":
                         
                 if len(driver_history) > 1:
                     single_driver_df = pd.DataFrame(driver_history).set_index("Milestone")
-                    st.line_chart(single_driver_df, height=175, y_label="Track Position", x_label="Milestone", y=[33, 1])
+                    st.line_chart(single_driver_df, height=175, y_label="Track Position", x_label="Milestone", y_config={"domain": [33, 1]})
             with col2:
                 st.image(row['Car_Pic'])
 
@@ -416,7 +416,7 @@ elif selected_tab == "📋 Roster View":
         if chart_records:
             chart_df = pd.DataFrame(chart_records).pivot(index="Milestone", columns="Driver", values="Position")
             chart_df = chart_df.reindex(milestones, axis=0).dropna(how='all')
-            st.line_chart(chart_df, y_label="Track Position Rank", x_label="Race Milestone", y=[33, 1])
+            st.line_chart(chart_df, y_label="Track Position Rank", x_label="Race Milestone", y_config={"domain": [33, 1]})
             
         st.write("---")
         
@@ -465,7 +465,7 @@ elif selected_tab == "📊 Popular Picks":
                             
                     if len(driver_history) > 1:
                         single_driver_df = pd.DataFrame(driver_history).set_index("Milestone")
-                        st.line_chart(single_driver_df, height=175, y_label="Track Position", x_label="Milestone", y=[33, 1])
+                        st.line_chart(single_driver_df, height=175, y_label="Track Position", x_label="Milestone", y_config={"domain": [33, 1]})
                 with col2:
                     st.image(row['Car_Pic'])
 
