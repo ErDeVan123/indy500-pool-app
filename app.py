@@ -12,7 +12,7 @@ st.markdown("""
     /* Target images inside columns to center vertically and fit horizontally */
     [data-testid="stImage"] img {
         height: 100px !important;
-        object-fit: contain !important; /* Prevents the front and back of the car from being cut off */
+        object-fit: contain !important;
         border-radius: 4px;
         display: block;
         margin-left: auto;
@@ -111,15 +111,18 @@ def load_picks():
 
 picks_df = load_picks()
 
-# Initialize active tab index tracker in Session State
+# Initialize dynamic navigation pointer cleanly in state
 if "active_tab" not in st.session_state:
-    st.session_state["active_tab"] = 0
+    st.session_state["active_tab"] = "🏆 Standings"
 
-# 3. Controlled Application Navigation Layout
+# 3. Streamlined One-Click Navigation Menu
 tab_options = ["🏆 Standings", "📝 Visual Draft Board", "🏁 Live Field", "📋 Roster View", "📊 Popular Picks"]
-selected_tab = st.radio("Navigation Menu", options=tab_options, index=st.session_state["active_tab"], horizontal=True, label_visibility="collapsed")
-
-st.session_state["active_tab"] = tab_options.index(selected_tab)
+selected_tab = st.segmented_control(
+    "Navigation Menu", 
+    options=tab_options, 
+    key="active_tab", 
+    label_visibility="collapsed"
+)
 
 st.write("---")
 
@@ -133,16 +136,35 @@ if selected_tab == "🏆 Standings":
         for _, row in picks_df.iterrows():
             user_picks = [row['P1'], row['P2'], row['P3'], row['P4'], row['P5'], row['P6'], row['P7'], row['P8']]
             user_drivers = df[df['Driver'].isin(user_picks)]
+            
+            # Calculations
             total_score = user_drivers['Current_Pos'].sum()
-            tier_count = user_drivers[user_drivers['Tier_1_3'] == 'Yes'].shape[0]
+            total_starting_positions = user_drivers['Starting_Pos'].sum()
             
             leaderboard_data.append({
-                "Lineup Entry Name": row['Participant'],
-                "Live Score": int(total_score),
-                "Top Rows (Max 3)": f"{tier_count}/3"
+                "Participant Name": row['Participant'],
+                "Final Points": int(total_score),
+                "Total Starting Positions": int(total_starting_positions)
             })
-        lbl_df = pd.DataFrame(leaderboard_data).sort_values(by="Live Score", ascending=True)
-        st.dataframe(lbl_df, use_container_width=True, hide_index=True)
+            
+        # Convert to DataFrame and sort by Final Points ascending (lowest score wins)
+        lbl_df = pd.DataFrame(leaderboard_data).sort_values(by="Final Points", ascending=True).reset_index(drop=True)
+        
+        # Inject Column 1: Participant's Place in the standings (1, 2, 3...)
+        lbl_df.insert(0, "Place", lbl_df.index + 1)
+        
+        # Display table with requested columns
+        st.dataframe(
+            lbl_df, 
+            column_config={
+                "Place": st.column_config.NumberColumn("Place", format="%d"),
+                "Participant Name": "Participant's Name",
+                "Final Points": "Final Points",
+                "Total Starting Positions": "Total Starting Positions"
+            },
+            use_container_width=True, 
+            hide_index=True
+        )
 
 # --- VIEW 2: HARD-VALIDATED DRAFT BOARD ---
 elif selected_tab == "📝 Visual Draft Board":
@@ -162,7 +184,7 @@ elif selected_tab == "📝 Visual Draft Board":
         is_selected = d_name in st.session_state["selected_pool"]
         
         with st.container(border=True):
-            col1, col2, col3 = st.columns([1.2, 2.8, 4.0]) # Rebalanced to give car photos maximum width
+            col1, col2, col3 = st.columns([1.2, 2.8, 4.0])
             with col1:
                 st.write(f"**Start Pos: {row['Starting_Pos']}**")
                 st.caption(f"⏱️ {row['Qual_Speed']}")
@@ -219,7 +241,8 @@ elif selected_tab == "📝 Visual Draft Board":
         updated_df.to_csv(PICKS_FILE, index=False)
         
         st.session_state["selected_pool"] = []
-        st.session_state["active_tab"] = 0
+        # Update session state key directly to skip the tab bug on forward auto-routing
+        st.session_state["active_tab"] = "🏆 Standings"
         st.success("Lineup successfully validated and deployed!")
         st.rerun()
 
