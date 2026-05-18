@@ -6,19 +6,19 @@ import os
 st.set_page_config(page_title="Indy 500 Pool Engine", layout="centered")
 st.title("🏎️ Indy 500 Live Pool Tracker")
 
-# Custom CSS to force car images to fill the container height, prevent distortion, and center vertically
+# Custom CSS: "contain" ensures the full car is visible; flex centering keeps them perfectly vertical
 st.markdown("""
     <style>
-    /* Target images inside columns to center vertically and fill height */
+    /* Target images inside columns to center vertically and fit horizontally */
     [data-testid="stImage"] img {
-        height: 110px !important;
-        object-fit: cover !important;
-        border-radius: 6px;
+        height: 100px !important;
+        object-fit: contain !important; /* Prevents the front and back of the car from being cut off */
+        border-radius: 4px;
         display: block;
         margin-left: auto;
         margin-right: auto;
     }
-    /* Ensure the column layout visually balances the text height */
+    /* Ensure the column layout visually balances the text height and centers content */
     [data-testid="stHorizontalBlock"] {
         align-items: center !important;
     }
@@ -63,7 +63,7 @@ def load_drivers():
             "Yes","Yes","Yes","Yes","Yes","Yes","Yes","Yes","Yes","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No"
         ],
         "Car_Pic": [
-            "https://www.indycar.com/-/media/IndyCar/Cars/2026/IndyCar-Series/Liveries/Indy500/10-DHL-SS.png?dp=05-11-2026T06:02PM",  # 1. Alex Palou
+            "https://your-hosting-site.com/car-10.jpg",  # 1. Alex Palou
             "https://your-hosting-site.com/car-20.jpg",  # 2. Alexander Rossi
             "https://your-hosting-site.com/car-12.jpg",  # 3. David Malukas
             "https://your-hosting-site.com/car-60.jpg",  # 4. Felix Rosenqvist
@@ -162,7 +162,7 @@ elif selected_tab == "📝 Visual Draft Board":
         is_selected = d_name in st.session_state["selected_pool"]
         
         with st.container(border=True):
-            col1, col2, col3 = st.columns([1.5, 3, 2.5]) # Slightly broadened image column weight
+            col1, col2, col3 = st.columns([1.2, 2.8, 4.0]) # Rebalanced to give car photos maximum width
             with col1:
                 st.write(f"**Start Pos: {row['Starting_Pos']}**")
                 st.caption(f"⏱️ {row['Qual_Speed']}")
@@ -228,7 +228,7 @@ elif selected_tab == "🏁 Live Field":
     st.header("Actual Indy 500 Field")
     for _, row in df.sort_values(by="Current_Pos").iterrows():
         with st.container(border=True):
-            col1, col2, col3 = st.columns([1.5, 3, 2.5])
+            col1, col2, col3 = st.columns([1.2, 2.8, 4.0])
             col1.metric("Live Pos", int(row['Current_Pos']))
             col1.caption(f"Started: P{row['Starting_Pos']}")
             col2.subheader(row['Driver'])
@@ -250,10 +250,11 @@ elif selected_tab == "📋 Roster View":
         
         for _, row in u_df.iterrows():
             with st.container(border=True):
-                col1, col2 = st.columns([3.5, 2.5])
+                col1, col2 = st.columns([4.0, 4.0])
                 col1.markdown(f"**Live Pos {int(row['Current_Pos'])}**: {row['Driver']} *(#{row['Car_Num']})*")
                 col1.caption(f"Grid Start: P{row['Starting_Pos']} | Speed: {row['Qual_Speed']}")
-                st.image(row['Car_Pic'])
+                with col2:
+                    st.image(row['Car_Pic'])
 
 # --- VIEW 5: POPULAR PICKS METRICS ---
 elif selected_tab == "📊 Popular Picks":
@@ -272,7 +273,7 @@ elif selected_tab == "📊 Popular Picks":
             d_name = row['Driver']
             choosing_p = driver_pick_map[d_name]
             with st.container(border=True):
-                col1, col2 = st.columns([3.5, 2.5])
+                col1, col2 = st.columns([4.0, 4.0])
                 with col1:
                     st.subheader(d_name)
                     st.caption(f"Car #{row['Car_Num']} | Start: P{row['Starting_Pos']} ({row['Qual_Speed']})")
