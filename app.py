@@ -22,6 +22,16 @@ st.markdown("""
     [data-testid="stHorizontalBlock"] {
         align-items: center !important;
     }
+    /* Target the dataframe to center specific numeric columns */
+    [data-testid="stDataFrame"] div[data-testid="stTable"] th,
+    [data-testid="stDataFrame"] div[data-testid="stTable"] td {
+        text-align: center !important;
+    }
+    /* Force left alignment specifically for the Participant Name column cells */
+    [data-testid="stDataFrame"] div[data-testid="stTable"] td:nth-child(4),
+    [data-testid="stDataFrame"] div[data-testid="stTable"] th:nth-child(4) {
+        text-align: left !important;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -109,24 +119,15 @@ def load_picks():
 
 picks_df = load_picks()
 
-# Initialize dynamic navigation pointer safely in state
-if "tab_index" not in st.session_state:
-    st.session_state["tab_index"] = 0
-
-# 4. Clear Single-Click Navigation Layout
+# 4. Refactored Clear One-Click Navigation Layout
 tab_options = ["🏆 Standings", "📝 Visual Draft Board", "🏁 Live Field", "📋 Roster View", "📊 Popular Picks"]
 
 selected_tab = st.segmented_control(
     "Navigation Menu", 
     options=tab_options, 
-    default=tab_options[st.session_state["tab_index"]],
+    default="🏆 Standings",
     label_visibility="collapsed"
 )
-
-if selected_tab:
-    st.session_state["tab_index"] = tab_options.index(selected_tab)
-else:
-    selected_tab = tab_options[st.session_state["tab_index"]]
 
 st.write("---")
 
@@ -160,6 +161,7 @@ if selected_tab == "🏆 Standings":
             
         master_df = pd.DataFrame(leaderboard_data)
         
+        # Default all placement ranks explicitly to 0 unless milestones actually contain real telemetry data
         if not (df['Pos_100'] == 0).all():
             master_df = master_df.sort_values(by="100 Laps Points", ascending=True)
             master_df["100 Lap Place"] = range(1, len(master_df) + 1)
@@ -274,7 +276,6 @@ elif selected_tab == "📝 Visual Draft Board":
         updated_df.to_csv(PICKS_FILE, index=False)
         
         st.session_state["selected_pool"] = []
-        st.session_state["tab_index"] = 0
         st.rerun()
 
 # --- VIEW 3: LIVE FIELD RUNNING ORDER (WITH LAP MILESTONE SCORING) ---
@@ -309,7 +310,6 @@ elif selected_tab == "🏁 Live Field":
     with st.expander("🛠️ Live Race Timing Tower Management (Input Milestone Positions Here)"):
         st.markdown("Select placement ranks via the dropdown boxes. Uncompleted points map safely to `0`.")
         
-        # Options array from 0 to 33
         position_dropdown_choices = list(range(34))
         
         updated_rows = []
@@ -342,10 +342,9 @@ elif selected_tab == "🏁 Live Field":
 
     st.subheader(display_title)
     
-    # Sorting mechanics: if sorting by an unrun milestone (all 0s), push the 0s to the bottom by secondary sorting on Starting_Pos
+    # Sorting mechanics: push unrun 0 positions down to the bottom
     sorted_df = df.copy()
     if sort_by_col != "Starting_Pos":
-        # Create a temporary sorting key so 0s go to the bottom of the track roster
         sorted_df["sort_key"] = sorted_df[sort_by_col].apply(lambda x: 99 if x == 0 else x)
         sorted_df = sorted_df.sort_values(by=["sort_key", "Starting_Pos"], ascending=True)
     else:
@@ -421,7 +420,6 @@ elif selected_tab == "📊 Popular Picks":
 st.write("---")
 with st.expander("🛠️ Admin Command Deck (Edit / Delete Entry Controls)"):
     
-    # --- RESET SECTION FOR TESTING ---
     st.subheader("Reset Race Milestone Positions")
     st.markdown("Use this during testing to instantly clear all manual inputs for Lap 100, Lap 150, and Final standings, resetting fields clean to 0.")
     
@@ -433,7 +431,6 @@ with st.expander("🛠️ Admin Command Deck (Edit / Delete Entry Controls)"):
         
     st.write("---")
 
-    # --- EXISTENT ROSTER DELETION ---
     if picks_df.empty:
         st.info("No participant records currently stored to edit.")
     else:
