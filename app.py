@@ -89,14 +89,13 @@ def load_race_positions():
     base_df = get_base_drivers()
     if os.path.exists(POSITIONS_FILE):
         pos_df = pd.read_csv(POSITIONS_FILE)
-        # Verify columns match
         if all(col in pos_df.columns for col in ["Driver", "Pos_100", "Pos_150", "Pos_Final"]):
             return pd.merge(base_df, pos_df[["Driver", "Pos_100", "Pos_150", "Pos_Final"]], on="Driver", how="left")
     
-    # Defaults if file doesn't exist yet (Fallback to Starting_Pos)
-    base_df["Pos_100"] = base_df["Starting_Pos"]
-    base_df["Pos_150"] = base_df["Starting_Pos"]
-    base_df["Pos_Final"] = base_df["Starting_Pos"]
+    # NEW DEFAULT: Unrun parts of the race default explicitly to 0
+    base_df["Pos_100"] = 0
+    base_df["Pos_150"] = 0
+    base_df["Pos_Final"] = 0
     return base_df
 
 df = load_race_positions()
@@ -148,6 +147,11 @@ if selected_tab == "🏆 Standings":
             score_final = user_drivers['Pos_Final'].sum()
             total_start_positions = user_drivers['Starting_Pos'].sum()
             
+            # If a segment hasn't been run yet (sum of driver values is 0), force score to 0
+            if (df['Pos_100'] == 0).all(): score_100 = 0
+            if (df['Pos_150'] == 0).all(): score_150 = 0
+            if (df['Pos_Final'] == 0).all(): score_final = 0
+
             leaderboard_data.append({
                 "Participant Name": row['Participant'],
                 "100 Laps Points": int(score_100),
@@ -158,22 +162,31 @@ if selected_tab == "🏆 Standings":
             
         master_df = pd.DataFrame(leaderboard_data)
         
-        # Calculate intermediate ranks for independent sorting capabilities
-        master_df = master_df.sort_values(by="100 Laps Points", ascending=True).reset_index(drop=True)
-        master_df.insert(0, "100 Lap Place", master_df.index + 1)
-        
-        master_df = master_df.sort_values(by="150 Laps Points", ascending=True).reset_index(drop=True)
-        master_df.insert(0, "150 Lap Place", master_df.index + 1)
-        
-        master_df = master_df.sort_values(by="Final Points", ascending=True).reset_index(drop=True)
-        master_df.insert(0, "Place", master_df.index + 1)
+        # Calculate ranks conditionally. If milestone is untouched (0), rank shows as 0.
+        if not (df['Pos_100'] == 0).all():
+            master_df = master_df.sort_values(by="100 Laps Points", ascending=True)
+            master_df["100 Lap Place"] = range(1, len(master_df) + 1)
+        else:
+            master_df["100 Lap Place"] = 0
+
+        if not (df['Pos_150'] == 0).all():
+            master_df = master_df.sort_values(by="150 Laps Points", ascending=True)
+            master_df["150 Lap Place"] = range(1, len(master_df) + 1)
+        else:
+            master_df["150 Lap Place"] = 0
+
+        if not (df['Pos_Final'] == 0).all():
+            master_df = master_df.sort_values(by="Final Points", ascending=True)
+            master_df["Place"] = range(1, len(master_df) + 1)
+        else:
+            master_df["Place"] = 0
         
         # Rearrange to keep columns highly structured and readable
         column_order = [
             "Place", "100 Lap Place", "150 Lap Place", "Participant Name", 
             "Final Points", "100 Laps Points", "150 Laps Points", "Total Starting Positions"
         ]
-        master_df = master_df[column_order]
+        master_df = master_df[column_order].sort_values(by=["Place", "Participant Name"])
 
         st.dataframe(
             master_df, 
@@ -272,9 +285,9 @@ elif selected_tab == "📝 Visual Draft Board":
 elif selected_tab == "🏁 Live Field":
     st.header("Actual Indy 500 Running Order")
     
-    # 4-Box Entry Dashboard Panel for convenient updates during race intervals
-    with st.expander("🛠️ Live Race Timing Tower Management (Input Milestone Positions Here)"):
-        st.write("Update current track locations here. Click save at the bottom to re-rank the fields.")
+    # 4-Box Entry Dashboard Panel using direct string text boxes instead of stepping widgets
+    with st.expander("🛠_ Live Race Timing Tower Management (Input Milestone Positions Here)"):
+        st.markdown("Type positions straight into the fields. Leave blank or use `0` for unrun parts of the race.")
         
         updated_rows = []
         for idx, row in df.sort_values(by="Starting_Pos").iterrows():
@@ -282,13 +295,18 @@ elif selected_tab == "🏁 Live Field":
             box1, box2, box3, box4 = st.columns(4)
             
             with box1:
-                st.number_input("Grid Start", value=int(row['Starting_Pos']), disabled=True, key=f"start_v_{idx}")
+                st.text_input("Grid Start", value=str(int(row['Starting_Pos'])), disabled=True, key=f"start_txt_{idx}")
             with box2:
-                p100 = st.number_input("Pos @ 100 Laps", min_value=1, max_value=33, value=int(row['Pos_100']), key=f"p100_v_{idx}")
+                v100 = st.text_input("Pos @ 100 Laps", value=str(int(row['Pos_100'])), key=f"p100_txt_{idx}")
             with box3:
-                p150 = st.number_input("Pos @ 150 Laps", min_value=1, max_value=33, value=int(row['Pos_150']), key=f"p150_v_{idx}")
+                v150 = st.text_input("Pos @ 150 Laps", value=str(int(row['Pos_150'])), key=f"p150_txt_{idx}")
             with box4:
-                pfin = st.number_input("Finish Position", min_value=1, max_value=33, value=int(row['Pos_Final']), key=f"pfin_v_{idx}")
+                vfin = st.text_input("Finish Position", value=str(int(row['Pos_Final'])), key=f"pfin_txt_{idx}")
+            
+            # Safe integer parses
+            p100 = int(v100.strip()) if v100.strip().isdigit() else 0
+            p150 = int(v150.strip()) if v150.strip().isdigit() else 0
+            pfin = int(vfin.strip()) if vfin.strip().isdigit() else 0
                 
             updated_rows.append({
                 "Driver": row['Driver'],
@@ -304,14 +322,14 @@ elif selected_tab == "🏁 Live Field":
             st.success("Track intervals securely recorded!")
             st.rerun()
 
-    # Determine optimal display sorting method based on current highest completed milestone data
-    if df["Pos_Final"].is_monotonic_increasing and df["Pos_Final"].sum() == 561: 
+    # Dynamic fallback check: Sort by the latest segment that contains an entire completed 33-driver field
+    if df["Pos_Final"].sum() == 561 and not (df["Pos_Final"] == 0).any(): 
         sort_by_col = "Pos_Final"
         display_title = "Final Track Finishing Order"
-    elif df["Pos_150"].sum() == 561 and not df["Pos_150"].isin([df["Starting_Pos"]]).all():
+    elif df["Pos_150"].sum() == 561 and not (df["Pos_150"] == 0).any():
         sort_by_col = "Pos_150"
         display_title = "Running Order @ Lap 150"
-    elif df["Pos_100"].sum() == 561 and not df["Pos_100"].isin([df["Starting_Pos"]]).all():
+    elif df["Pos_100"].sum() == 561 and not (df["Pos_100"] == 0).any():
         sort_by_col = "Pos_100"
         display_title = "Running Order @ Lap 100"
     else:
@@ -324,12 +342,13 @@ elif selected_tab == "🏁 Live Field":
         with st.container(border=True):
             col1, col2, col3 = st.columns([1.5, 2.5, 4.0])
             with col1:
-                st.metric("Current Order", int(row[sort_by_col]))
+                # If sorting by grid start, show grid start value. Otherwise show active milestone ranking position.
+                current_display_rank = row[sort_by_col] if row[sort_by_col] != 0 else row["Starting_Pos"]
+                st.metric("Current Order", int(current_display_rank))
                 st.caption(f"Grid Start: P{row['Starting_Pos']}")
             with col2:
                 st.subheader(row['Driver'])
                 st.caption(f"#{row['Car_Num']} | {row['Team']}")
-                # Showcase 4-box status cleanly on cards
                 st.markdown(f"🏁 **P{row['Pos_100']}** (100L) | **P{row['Pos_150']}** (150L) | **P{row['Pos_Final']}** (Fin)")
             with col3:
                 st.image(row['Car_Pic'])
@@ -344,14 +363,17 @@ elif selected_tab == "📋 Roster View":
         u_row = picks_df[picks_df['Participant'] == user].iloc[0]
         u_picks = [u_row['P1'], u_row['P2'], u_row['P3'], u_row['P4'], u_row['P5'], u_row['P6'], u_row['P7'], u_row['P8']]
         
-        u_df = df[df['Driver'].isin(u_picks)].sort_values(by="Pos_Final")
-        st.metric("Roster Live Score", int(u_df['Pos_Final'].sum()))
+        # Sort by active column preference
+        sort_basis = "Pos_Final" if df["Pos_Final"].sum() == 561 else ("Pos_150" if df["Pos_150"].sum() == 561 else ("Pos_100" if df["Pos_100"].sum() == 561 else "Starting_Pos"))
+        u_df = df[df['Driver'].isin(u_picks)].sort_values(by=sort_basis)
+        
+        st.metric("Roster Live Score Sum", int(u_df[sort_basis].sum()))
         
         for _, row in u_df.iterrows():
             with st.container(border=True):
                 col1, col2 = st.columns([4.0, 4.0])
-                col1.markdown(f"**Final Ranks {int(row['Pos_Final'])}**: {row['Driver']} *(#{row['Car_Num']})*")
-                col1.caption(f"Grid Start: P{row['Starting_Pos']} | 100L: P{row['Pos_100']} | 150L: P{row['Pos_150']}")
+                col1.markdown(f"**{row['Driver']}** *(#{row['Car_Num']})*")
+                col1.caption(f"Grid Start: P{row['Starting_Pos']} | 100L: P{row['Pos_100']} | 150L: P{row['Pos_150']} | Final: P{row['Pos_Final']}")
                 with col2:
                     st.image(row['Car_Pic'])
 
@@ -389,12 +411,12 @@ with st.expander("🛠️ Admin Command Deck (Edit / Delete Entry Controls)"):
     
     # --- RESET SECTION FOR TESTING ---
     st.subheader("Reset Race Milestone Positions")
-    st.markdown("Use this during testing to instantly clear all manual inputs for Lap 100, Lap 150, and Final standings, resetting everyone back to their grid starting positions.")
+    st.markdown("Use this during testing to instantly clear all manual inputs for Lap 100, Lap 150, and Final standings, resetting fields clean to 0.")
     
     if st.button("Clear Milestone Data & Reset Field", type="secondary"):
         if os.path.exists(POSITIONS_FILE):
-            os.remove(POSITIONS_FILE)  # Deleting the file forces the app to regenerate default starting grids
-        st.success("All test data cleared! Race milestones have been reset to grid starting order.")
+            os.remove(POSITIONS_FILE)
+        st.success("All test milestones successfully cleared back to 0!")
         st.rerun()
         
     st.write("---")
