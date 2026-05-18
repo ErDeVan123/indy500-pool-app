@@ -92,7 +92,7 @@ def load_race_positions():
         if all(col in pos_df.columns for col in ["Driver", "Pos_100", "Pos_150", "Pos_Final"]):
             return pd.merge(base_df, pos_df[["Driver", "Pos_100", "Pos_150", "Pos_Final"]], on="Driver", how="left")
     
-    # NEW DEFAULT: Unrun parts of the race default explicitly to 0
+    # Starting conditions: Milestones default to 0
     base_df["Pos_100"] = 0
     base_df["Pos_150"] = 0
     base_df["Pos_Final"] = 0
@@ -141,13 +141,11 @@ if selected_tab == "🏆 Standings":
             user_picks = [row['P1'], row['P2'], row['P3'], row['P4'], row['P5'], row['P6'], row['P7'], row['P8']]
             user_drivers = df[df['Driver'].isin(user_picks)]
             
-            # Continuous points summations
             score_100 = user_drivers['Pos_100'].sum()
             score_150 = user_drivers['Pos_150'].sum()
             score_final = user_drivers['Pos_Final'].sum()
             total_start_positions = user_drivers['Starting_Pos'].sum()
             
-            # If a segment hasn't been run yet (sum of driver values is 0), force score to 0
             if (df['Pos_100'] == 0).all(): score_100 = 0
             if (df['Pos_150'] == 0).all(): score_150 = 0
             if (df['Pos_Final'] == 0).all(): score_final = 0
@@ -162,7 +160,6 @@ if selected_tab == "🏆 Standings":
             
         master_df = pd.DataFrame(leaderboard_data)
         
-        # Calculate ranks conditionally. If milestone is untouched (0), rank shows as 0.
         if not (df['Pos_100'] == 0).all():
             master_df = master_df.sort_values(by="100 Laps Points", ascending=True)
             master_df["100 Lap Place"] = range(1, len(master_df) + 1)
@@ -181,7 +178,6 @@ if selected_tab == "🏆 Standings":
         else:
             master_df["Place"] = 0
         
-        # Rearrange to keep columns highly structured and readable
         column_order = [
             "Place", "100 Lap Place", "150 Lap Place", "Participant Name", 
             "Final Points", "100 Laps Points", "150 Laps Points", "Total Starting Positions"
@@ -285,9 +281,36 @@ elif selected_tab == "📝 Visual Draft Board":
 elif selected_tab == "🏁 Live Field":
     st.header("Actual Indy 500 Running Order")
     
-    # 4-Box Entry Dashboard Panel using direct string text boxes instead of stepping widgets
-    with st.expander("🛠_ Live Race Timing Tower Management (Input Milestone Positions Here)"):
-        st.markdown("Type positions straight into the fields. Leave blank or use `0` for unrun parts of the race.")
+    # Milestone filter buttons at the top of the tab
+    milestone_options = ["Start", "Lap 100", "Lap 150", "Finish"]
+    selected_milestone = st.segmented_control(
+        "Display Sort Metric:",
+        options=milestone_options,
+        default="Start"
+    )
+    
+    # Establish sorting logic based on active choice
+    if selected_milestone == "Lap 100":
+        sort_by_col = "Pos_100"
+        display_title = "Running Order @ Lap 100"
+    elif selected_milestone == "Lap 150":
+        sort_by_col = "Pos_150"
+        display_title = "Running Order @ Lap 150"
+    elif selected_milestone == "Finish":
+        sort_by_col = "Pos_Final"
+        display_title = "Final Track Finishing Order"
+    else:
+        sort_by_col = "Starting_Pos"
+        display_title = "Official Initial Grid Ranks"
+
+    st.write("---")
+
+    # 4-Box Management Panel with Dropdowns
+    with st.expander("🛠️ Live Race Timing Tower Management (Input Milestone Positions Here)"):
+        st.markdown("Select placement ranks via the dropdown boxes. Uncompleted points map safely to `0`.")
+        
+        # Options array from 0 to 33
+        position_dropdown_choices = list(range(34))
         
         updated_rows = []
         for idx, row in df.sort_values(by="Starting_Pos").iterrows():
@@ -295,24 +318,19 @@ elif selected_tab == "🏁 Live Field":
             box1, box2, box3, box4 = st.columns(4)
             
             with box1:
-                st.text_input("Grid Start", value=str(int(row['Starting_Pos'])), disabled=True, key=f"start_txt_{idx}")
+                st.selectbox("Grid Start", options=[int(row['Starting_Pos'])], disabled=True, key=f"start_drop_{idx}")
             with box2:
-                v100 = st.text_input("Pos @ 100 Laps", value=str(int(row['Pos_100'])), key=f"p100_txt_{idx}")
+                p100_val = st.selectbox("Pos @ 100 Laps", options=position_dropdown_choices, index=int(row['Pos_100']), key=f"p100_drop_{idx}")
             with box3:
-                v150 = st.text_input("Pos @ 150 Laps", value=str(int(row['Pos_150'])), key=f"p150_txt_{idx}")
+                p150_val = st.selectbox("Pos @ 150 Laps", options=position_dropdown_choices, index=int(row['Pos_150']), key=f"p150_drop_{idx}")
             with box4:
-                vfin = st.text_input("Finish Position", value=str(int(row['Pos_Final'])), key=f"pfin_txt_{idx}")
-            
-            # Safe integer parses
-            p100 = int(v100.strip()) if v100.strip().isdigit() else 0
-            p150 = int(v150.strip()) if v150.strip().isdigit() else 0
-            pfin = int(vfin.strip()) if vfin.strip().isdigit() else 0
+                pfin_val = st.selectbox("Finish Position", options=position_dropdown_choices, index=int(row['Pos_Final']), key=f"pfin_drop_{idx}")
                 
             updated_rows.append({
                 "Driver": row['Driver'],
-                "Pos_100": p100,
-                "Pos_150": p150,
-                "Pos_Final": pfin
+                "Pos_100": p100_val,
+                "Pos_150": p150_val,
+                "Pos_Final": pfin_val
             })
             st.write("---")
             
@@ -322,29 +340,24 @@ elif selected_tab == "🏁 Live Field":
             st.success("Track intervals securely recorded!")
             st.rerun()
 
-    # Dynamic fallback check: Sort by the latest segment that contains an entire completed 33-driver field
-    if df["Pos_Final"].sum() == 561 and not (df["Pos_Final"] == 0).any(): 
-        sort_by_col = "Pos_Final"
-        display_title = "Final Track Finishing Order"
-    elif df["Pos_150"].sum() == 561 and not (df["Pos_150"] == 0).any():
-        sort_by_col = "Pos_150"
-        display_title = "Running Order @ Lap 150"
-    elif df["Pos_100"].sum() == 561 and not (df["Pos_100"] == 0).any():
-        sort_by_col = "Pos_100"
-        display_title = "Running Order @ Lap 100"
-    else:
-        sort_by_col = "Starting_Pos"
-        display_title = "Official Initial Grid Ranks"
-
     st.subheader(display_title)
     
-    for _, row in df.sort_values(by=sort_by_col, ascending=True).iterrows():
+    # Sorting mechanics: if sorting by an unrun milestone (all 0s), push the 0s to the bottom by secondary sorting on Starting_Pos
+    sorted_df = df.copy()
+    if sort_by_col != "Starting_Pos":
+        # Create a temporary sorting key so 0s go to the bottom of the track roster
+        sorted_df["sort_key"] = sorted_df[sort_by_col].apply(lambda x: 99 if x == 0 else x)
+        sorted_df = sorted_df.sort_values(by=["sort_key", "Starting_Pos"], ascending=True)
+    else:
+        sorted_df = sorted_df.sort_values(by="Starting_Pos", ascending=True)
+    
+    for _, row in sorted_df.iterrows():
         with st.container(border=True):
             col1, col2, col3 = st.columns([1.5, 2.5, 4.0])
             with col1:
-                # If sorting by grid start, show grid start value. Otherwise show active milestone ranking position.
-                current_display_rank = row[sort_by_col] if row[sort_by_col] != 0 else row["Starting_Pos"]
-                st.metric("Current Order", int(current_display_rank))
+                current_val = row[sort_by_col]
+                metric_label = f"P{current_val}" if current_val != 0 else "--"
+                st.metric("Current Order", metric_label)
                 st.caption(f"Grid Start: P{row['Starting_Pos']}")
             with col2:
                 st.subheader(row['Driver'])
@@ -363,7 +376,6 @@ elif selected_tab == "📋 Roster View":
         u_row = picks_df[picks_df['Participant'] == user].iloc[0]
         u_picks = [u_row['P1'], u_row['P2'], u_row['P3'], u_row['P4'], u_row['P5'], u_row['P6'], u_row['P7'], u_row['P8']]
         
-        # Sort by active column preference
         sort_basis = "Pos_Final" if df["Pos_Final"].sum() == 561 else ("Pos_150" if df["Pos_150"].sum() == 561 else ("Pos_100" if df["Pos_100"].sum() == 561 else "Starting_Pos"))
         u_df = df[df['Driver'].isin(u_picks)].sort_values(by=sort_basis)
         
