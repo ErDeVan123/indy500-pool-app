@@ -6,7 +6,7 @@ import os
 st.set_page_config(page_title="Indy 500 Pool Engine", layout="centered")
 st.title("🏎️ Indy 500 Live Pool Tracker")
 
-# 1. Official 2026 Starting Grid with Qualifying Metrics
+# 1. Official Starting Grid Data
 @st.cache_data(ttl=5)
 def load_drivers():
     data = {
@@ -47,7 +47,7 @@ def load_drivers():
 
 df = load_drivers()
 
-# 2. Synchronize CSV Database Local State
+# 2. Synchronize CSV Database
 PICKS_FILE = "picks.csv"
 def load_picks():
     if os.path.exists(PICKS_FILE):
@@ -56,14 +56,25 @@ def load_picks():
 
 picks_df = load_picks()
 
-# 3. Dynamic Application Navigation Tabs
-tab1, tab2, tab3, tab4, tab5 = st.tabs(["🏆 Standings", "📝 Visual Draft Board", "🏁 Live Field", "📋 Roster View", "📊 Popular Picks"])
+# Initialize active tab index tracker in Session State
+if "active_tab" not in st.session_state:
+    st.session_state["active_tab"] = 0
 
-# --- TAB 1: OVERALL STANDINGS ---
-with tab1:
+# 3. Controlled Application Navigation Layout
+# (Using the selectbox/radio tab navigation style to allow manual control programmatically)
+tab_options = ["🏆 Standings", "📝 Visual Draft Board", "🏁 Live Field", "📋 Roster View", "📊 Popular Picks"]
+selected_tab = st.radio("Navigation Menu", options=tab_options, index=st.session_state["active_tab"], horizontal=True, label_visibility="collapsed")
+
+# Match state index with selections to prevent navigation sync lock loops
+st.session_state["active_tab"] = tab_options.index(selected_tab)
+
+st.write("---")
+
+# --- VIEW 1: OVERALL STANDINGS ---
+if selected_tab == "🏆 Standings":
     st.header("Overall Standings")
     if picks_df.empty:
-        st.info("No pool sheets logged yet.")
+        st.info("No pool sheets logged yet. Select the 'Visual Draft Board' menu above to add yours!")
     else:
         leaderboard_data = []
         for _, row in picks_df.iterrows():
@@ -73,19 +84,20 @@ with tab1:
             tier_count = user_drivers[user_drivers['Tier_1_3'] == 'Yes'].shape[0]
             
             leaderboard_data.append({
-                "Participant": row['Participant'],
+                "Lineup Entry Name": row['Participant'],
                 "Live Score": int(total_score),
                 "Top Rows (Max 3)": f"{tier_count}/3"
             })
         lbl_df = pd.DataFrame(leaderboard_data).sort_values(by="Live Score", ascending=True)
         st.dataframe(lbl_df, use_container_width=True, hide_index=True)
 
-# --- TAB 2: HARD-VALIDATED DRAFT BOARD ---
-with tab2:
+# --- VIEW 2: HARD-VALIDATED DRAFT BOARD ---
+elif selected_tab == "📝 Visual Draft Board":
     st.header("Interactive Draft Field")
     st.markdown("Select exactly **8 drivers**. Maximum **3 from Rows 1-3**.")
+    st.caption("💡 Tip: You can enter multiple times! Just give each submission a distinct Entry Name (e.g., 'Mark - Team A', 'Mark - Team B').")
     
-    entry_name = st.text_input("Enter Your Name:", key="new_user_name").strip()
+    entry_name = st.text_input("Enter Roster Submission Name:", key="new_user_name", placeholder="e.g., Sarah - Lineup 1").strip()
     
     if "selected_pool" not in st.session_state:
         st.session_state["selected_pool"] = []
@@ -130,19 +142,19 @@ with tab2:
     c1.metric("Drivers Picked (Must be 8)", f"{count_picked} / 8", delta=None if count_picked <= 8 else "Too Many!", delta_color="inverse")
     c2.metric("Top-Tier Rows 1-3 (Max 3)", f"{count_tier} / 3", delta=None if count_tier <= 3 else "Limit Exceeded!", delta_color="inverse")
     
-    # STRICT HARD RULES SUBMISSION BLOCKER
+    # HARD CODE LINEUP SUBMISSION RULES
     can_submit = True
     if count_picked != 8:
-        st.error(f"⚠️ Blocked: You must select exactly 8 drivers. You currently have {count_picked}.")
+        st.error(f"⚠️ Blocked: Lineup must contain exactly 8 choices. You currently have {count_picked} selected.")
         can_submit = False
     if count_tier > 3:
-        st.error(f"⚠️ Blocked: You have selected {count_tier} drivers from Rows 1-3. The absolute limit is 3.")
+        st.error(f"⚠️ Blocked: You have selected {count_tier} drivers from Rows 1-3. The absolute tier limit is 3.")
         can_submit = False
     if not entry_name:
-        st.warning("Please enter your name above to activate the submission button.")
+        st.warning("Please input a distinct Submission Name above to activate the lock-in button.")
         can_submit = False
     elif entry_name in picks_df['Participant'].values:
-        st.error(f"⚠️ Blocked: An entry named '{entry_name}' already exists.")
+        st.error(f"⚠️ Blocked: A lineup entry named '{entry_name}' has already been submitted. Use a new modifier label.")
         can_submit = False
 
     if st.button("Submit Official Roster Lineup", type="primary", disabled=not can_submit):
@@ -153,12 +165,17 @@ with tab2:
         }])
         updated_df = pd.concat([picks_df, new_entry], ignore_index=True)
         updated_df.to_csv(PICKS_FILE, index=False)
-        st.success("Roster locked and loaded successfully!")
+        
+        # Clear selected drafting tray out
         st.session_state["selected_pool"] = []
+        
+        # Core Auto-Route Action: Move application engine pointer back to Standings page view
+        st.session_state["active_tab"] = 0
+        st.success("Lineup successfully validated and deployed!")
         st.rerun()
 
-# --- TAB 3: LIVE FIELD RUNNING ORDER ---
-with tab3:
+# --- VIEW 3: LIVE FIELD RUNNING ORDER ---
+elif selected_tab == "🏁 Live Field":
     st.header("Actual Indy 500 Field")
     for _, row in df.sort_values(by="Current_Pos").iterrows():
         with st.container(border=True):
@@ -169,13 +186,13 @@ with tab3:
             col2.caption(f"#{row['Car_Num']} | {row['Team']}\nQual Speed: {row['Qual_Speed']}")
             col3.image(row['Car_Pic'], use_container_width=True)
 
-# --- TAB 4: ROSTER VIEW ---
-with tab4:
+# --- VIEW 4: ROSTER VIEW ---
+elif selected_tab == "📋 Roster View":
     st.header("Roster Inspection Profiles")
     if picks_df.empty:
         st.info("No active rosters submitted.")
     else:
-        user = st.selectbox("Choose Profile:", picks_df['Participant'].tolist())
+        user = st.selectbox("Choose Entry Profile:", picks_df['Participant'].tolist())
         u_row = picks_df[picks_df['Participant'] == user].iloc[0]
         u_picks = [u_row['P1'], u_row['P2'], u_row['P3'], u_row['P4'], u_row['P5'], u_row['P6'], u_row['P7'], u_row['P8']]
         
@@ -189,8 +206,8 @@ with tab4:
                 col1.caption(f"Grid Start: P{row['Starting_Pos']} | Speed: {row['Qual_Speed']}")
                 col2.image(row['Car_Pic'], use_container_width=True)
 
-# --- TAB 5: POPULAR PICKS METRICS ---
-with tab5:
+# --- VIEW 5: POPULAR PICKS METRICS ---
+elif selected_tab == "📊 Popular Picks":
     st.header("Participant Pick Summary")
     if picks_df.empty:
         st.info("No picks drafted yet.")
@@ -217,13 +234,13 @@ with tab5:
                 with col2:
                     st.image(row['Car_Pic'], use_container_width=True)
 
-# --- SYSTEM ADMIN COMMAND DECK (HIDDEN FOOTER EDITOR) ---
+# --- SYSTEM ADMIN COMMAND DECK ---
 st.write("---")
 with st.expander("🛠️ Admin Command Deck (Edit / Delete Entry Controls)"):
     if picks_df.empty:
         st.info("No participant records currently stored to edit.")
     else:
-        st.subheader("Delete a Participant Profile")
+        st.subheader("Delete an Entry Profile Lineup")
         delete_target = st.selectbox("Select Entry to Permanently Delete:", picks_df['Participant'].tolist(), key="admin_del_select")
         
         if st.button("Permanently Delete Roster", type="primary"):
