@@ -6,7 +6,7 @@ import os
 st.set_page_config(page_title="Indy 500 Pool Engine", layout="centered")
 st.title("🏎️ Indy 500 Live Pool Tracker")
 
-# 1. Official Starting Grid Data
+# 1. Official Starting Grid Data (Full 33-Driver Field)
 @st.cache_data(ttl=5)
 def load_drivers():
     data = {
@@ -29,7 +29,7 @@ def load_drivers():
             "Meyer Shank Racing", "Andretti Global", "Arrow McLaren", "Andretti Global", "Arrow McLaren", 
             "Rahal Letterman", "Arrow McLaren", "Team Penske", "Dale Coyne Racing", "Andretti Global", 
             "HMD Motorsports", "Rahal Letterman", "Rahal Letterman", "Dale Coyne Racing", "Abel Motorsports", 
-            "Juncos Hollinger", "A.Y. Foyt Racing", "Dreyer & Reinbold"
+            "Juncos Hollinger", "A.J. Foyt Racing", "Dreyer & Reinbold"
         ],
         "Qual_Speed": [
             "234.214 mph", "233.811 mph", "233.504 mph", "233.210 mph", "233.114 mph", 
@@ -40,8 +40,44 @@ def load_drivers():
             "229.654 mph", "229.412 mph", "229.214 mph", "229.004 mph", "228.841 mph", 
             "228.651 mph", "228.411 mph", "228.104 mph"
         ],
-        "Tier_1_3": ["Yes","Yes","Yes","Yes","Yes","Yes","Yes","Yes","Yes","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No"],
-        "Car_Pic": ["https://picsum.photos/id/102/100/60"] * 33
+        "Tier_1_3": [
+            "Yes","Yes","Yes","Yes","Yes","Yes","Yes","Yes","Yes","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No"
+        ],
+        "Car_Pic": [
+            "https://www.indycar.com/-/media/IndyCar/Cars/2026/IndyCar-Series/Liveries/Indy500/10-DHL-SS.png?dp=05-11-2026T06:02PM",  # 1. Alex Palou
+            "https://your-hosting-site.com/car-20.jpg",  # 2. Alexander Rossi
+            "https://your-hosting-site.com/car-12.jpg",  # 3. David Malukas
+            "https://your-hosting-site.com/car-60.jpg",  # 4. Felix Rosenqvist
+            "https://your-hosting-site.com/car-14.jpg",  # 5. Santino Ferrucci
+            "https://your-hosting-site.com/car-5.jpg",   # 6. Pato O'Ward
+            "https://your-hosting-site.com/car-8.jpg",   # 7. Kyffin Simpson
+            "https://your-hosting-site.com/car-23.jpg",  # 8. Conor Daly
+            "https://your-hosting-site.com/car-3.jpg",   # 9. Scott McLaughlin
+            "https://your-hosting-site.com/car-9.jpg",   # 10. Scott Dixon
+            "https://your-hosting-site.com/car-76.jpg",  # 11. Rinus VeeKay
+            "https://your-hosting-site.com/car-75.jpg",  # 12. Takuma Sato
+            "https://your-hosting-site.com/car-33.jpg",  # 13. Ed Carpenter
+            "https://your-hosting-site.com/car-6.jpg",   # 14. Helio Castroneves
+            "https://your-hosting-site.com/car-21.jpg",  # 15. Christian Rasmussen
+            "https://your-hosting-site.com/car-66.jpg",  # 16. Marcus Armstrong
+            "https://your-hosting-site.com/car-28.jpg",  # 17. Marcus Ericsson
+            "https://your-hosting-site.com/car-7.jpg",   # 18. Christian Lundgaard
+            "https://your-hosting-site.com/car-26.jpg",  # 19. Will Power
+            "https://your-hosting-site.com/car-6b.jpg",  # 20. Nolan Siegel
+            "https://your-hosting-site.com/car-45.jpg",  # 21. Louis Foster
+            "https://your-hosting-site.com/car-31.jpg",  # 22. Ryan Hunter-Reay
+            "https://your-hosting-site.com/car-2.jpg",   # 23. Josef Newgarden
+            "https://your-hosting-site.com/car-18.jpg",  # 24. Romain Grosjean
+            "https://your-hosting-site.com/car-27.jpg",  # 25. Kyle Kirkwood
+            "https://your-hosting-site.com/car-11.jpg",  # 26. Katherine Legge
+            "https://your-hosting-site.com/car-47.jpg",  # 27. Mick Schumacher
+            "https://your-hosting-site.com/car-15.jpg",  # 28. Graham Rahal
+            "https://your-hosting-site.com/car-19.jpg",  # 29. Dennis Hauger
+            "https://your-hosting-site.com/car-51.jpg",  # 30. Jacob Abel
+            "https://your-hosting-site.com/car-77.jpg",  # 31. Sting Ray Robb
+            "https://your-hosting-site.com/car-4.jpg",   # 32. Caio Collet
+            "https://your-hosting-site.com/car-24.jpg"   # 33. Jack Harvey
+        ]
     }
     return pd.DataFrame(data)
 
@@ -61,7 +97,6 @@ if "active_tab" not in st.session_state:
     st.session_state["active_tab"] = 0
 
 # 3. Controlled Application Navigation Layout
-# (Using the selectbox/radio tab navigation style to allow manual control programmatically)
 tab_options = ["🏆 Standings", "📝 Visual Draft Board", "🏁 Live Field", "📋 Roster View", "📊 Popular Picks"]
 selected_tab = st.radio("Navigation Menu", options=tab_options, index=st.session_state["active_tab"], horizontal=True, label_visibility="collapsed")
 
@@ -142,7 +177,6 @@ elif selected_tab == "📝 Visual Draft Board":
     c1.metric("Drivers Picked (Must be 8)", f"{count_picked} / 8", delta=None if count_picked <= 8 else "Too Many!", delta_color="inverse")
     c2.metric("Top-Tier Rows 1-3 (Max 3)", f"{count_tier} / 3", delta=None if count_tier <= 3 else "Limit Exceeded!", delta_color="inverse")
     
-    # HARD CODE LINEUP SUBMISSION RULES
     can_submit = True
     if count_picked != 8:
         st.error(f"⚠️ Blocked: Lineup must contain exactly 8 choices. You currently have {count_picked} selected.")
@@ -166,10 +200,7 @@ elif selected_tab == "📝 Visual Draft Board":
         updated_df = pd.concat([picks_df, new_entry], ignore_index=True)
         updated_df.to_csv(PICKS_FILE, index=False)
         
-        # Clear selected drafting tray out
         st.session_state["selected_pool"] = []
-        
-        # Core Auto-Route Action: Move application engine pointer back to Standings page view
         st.session_state["active_tab"] = 0
         st.success("Lineup successfully validated and deployed!")
         st.rerun()
