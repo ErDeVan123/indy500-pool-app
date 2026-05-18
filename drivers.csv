@@ -1,0 +1,11 @@
+Current_Pos,Car_Num,Driver,Team,Tier_1_3,Driver_Pic,Car_Pic
+1,10,Alex Palou,Chip Ganassi Racing,Yes,https://example.com/palou.jpg,https://example.com/car10.jpg
+2,20,Alexander Rossi,Ed Carpenter Racing,Yes,https://example.com/rossi.jpg,https://example.com/car20.jpg
+3,12,David Malukas,Team Penske,Yes,https://example.com/malukas.jpg,https://example.com/car12.jpg
+4,60,Felix Rosenqvist,Meyer Shank Racing,Yes,https://example.com/felix.jpg,https://example.com/car60.jpg
+5,14,Santino Ferrucci,A.J. Foyt Racing,Yes,https://example.com/santino.jpg,https://example.com/car14.jpg
+6,5,Pato O'Ward,Arrow McLaren,Yes,https://example.com/pato.jpg,https://example.com/car5.jpg
+7,8,Kyffin Simpson,Chip Ganassi Racing,Yes,https://example.com/kyffin.jpg,https://example.com/car8.jpg
+8,23,Conv Daly,Dreyer & Reinbold,Yes,https://example.com/conor.jpg,https://example.com/car23.jpg
+9,3,Scott McLaughlin,Team Penske,Yes,https://example.com/scott.jpg,https://example.com/car3.jpg
+10,9,Scott Dixon,Chip Ganassi Racing,No,https://example.com/dixon.jpg,https://example.com/car9.jpg
