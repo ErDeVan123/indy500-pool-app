@@ -6,9 +6,16 @@ import os
 # Page layout setup
 st.set_page_config(page_title="Indy 500 Pool Engine", layout="centered")
 
-# Custom Styling: Checkered background pattern, tab highlights, and clean table alignments
+# Custom Styling: Overriding native mobile dark-mode layers for absolute contrast
 st.markdown("""
     <style>
+    /* 1. FORCE THE APP ROOT VARIABLES TO LIGHT STATE FOR MOBILE SYSTEM OVERRIDES */
+    :root, [data-theme="light"], [data-theme="dark"] {
+        --text-color: #000000 !important;
+        --background-color: #ffffff !important;
+        --primary-color: #ff0000 !important;
+    }
+
     /* Set a clean, responsive checkered flag background pattern */
     .stApp {
         background-image: linear-gradient(45deg, rgba(200,200,200,0.15) 25%, transparent 25%), 
@@ -17,30 +24,46 @@ st.markdown("""
                           linear-gradient(-45deg, transparent 75%, rgba(200,200,200,0.15) 75%);
         background-size: 40px 40px;
         background-position: 0 0, 0 20px, 20px -20px, -20px 0px;
-        background-color: #ffffff;
+        background-color: #ffffff !important;
     }
     
-    /* TARGETED MOBILE TEXT FIX: Safe elements that won't break tabs or borders */
+    /* Target regular body text safely across mobile webkit engines */
     .stApp h1, .stApp h2, .stApp h3, .stApp p, .stApp label, .stApp small, .stMarkdown p {
         color: #000000 !important;
+        -webkit-text-fill-color: #000000 !important;
     }
 
-    /* CUSTOM TAB STYLING: Enforces bright red text across all tab states on all devices */
+    /* 2. COMPLETELY RESET SEGMENTED CONTROL WRAPPERS TO PREVENT SYSTEM BLACKOUTS */
+    div[data-testid="stSegmentedControl"] {
+        background-color: #f1f1f1 !important;
+        padding: 4px;
+        border-radius: 8px;
+    }
+
+    /* --- UNUSED / UNSELECTED TABS --- */
     div[data-testid="stSegmentedControl"] button[aria-checked="false"] {
-        background-color: #ffffff !important;
-        border: 1px solid #ffcbdb !important;
+        background-color: #ffffff !important; /* Force pristine white background */
+        border: 2px solid #d3d3d3 !important;
     }
-    div[data-testid="stSegmentedControl"] button[aria-checked="false"] p {
-        color: #ff0000 !important; /* Force red text on unselected tabs */
-        -webkit-text-fill-color: #ff0000 !important; /* Overrides mobile-specific color defaults */
+    /* Drill deep down into Streamlit text and paragraph nodes to destroy native mobile blackouts */
+    div[data-testid="stSegmentedControl"] button[aria-checked="false"] p,
+    div[data-testid="stSegmentedControl"] button[aria-checked="false"] span,
+    div[data-testid="stSegmentedControl"] button[aria-checked="false"] label {
+        color: #ff0000 !important; /* Sharp Red Text */
+        -webkit-text-fill-color: #ff0000 !important; /* Force kill system dark-mode typography fills */
+        font-weight: 500 !important;
     }
+
+    /* --- SELECTED TABS --- */
     div[data-testid="stSegmentedControl"] button[aria-checked="true"] {
-        background-color: #fce4ec !important;
-        border: 1px solid #f8bbd0 !important;
+        background-color: #ff0000 !important; /* Bright Red container for unmistakable contrast */
+        border: 2px solid #cc0000 !important;
     }
-    div[data-testid="stSegmentedControl"] button[aria-checked="true"] p {
-        color: #ff0000 !important; /* Force red text on selected tabs */
-        -webkit-text-fill-color: #ff0000 !important;
+    div[data-testid="stSegmentedControl"] button[aria-checked="true"] p,
+    div[data-testid="stSegmentedControl"] button[aria-checked="true"] span,
+    div[data-testid="stSegmentedControl"] button[aria-checked="true"] label {
+        color: #ffffff !important; /* Bold White text over Red background */
+        -webkit-text-fill-color: #ffffff !important;
         font-weight: bold !important;
     }
     
@@ -145,7 +168,7 @@ def get_base_drivers():
             "https://your-hosting-site.com/car-21.jpg", "https://your-hosting-site.com/car-66.jpg",
             "https://your-hosting-site.com/car-28.jpg", "https://your-hosting-site.com/car-7.jpg",
             "https://your-hosting-site.com/car-26.jpg", "https://your-hosting-site.com/car-6b.jpg",
-            "https://your-hosting-site.com/car-45.jpg", "https://your-hosting-site.com/car-31.jpg",
+            "https://your-running-site.com/car-45.jpg", "https://your-hosting-site.com/car-31.jpg",
             "https://your-running-site.com/car-2.jpg",  "https://your-hosting-site.com/car-18.jpg",
             "https://your-hosting-site.com/car-27.jpg", "https://your-hosting-site.com/car-11.jpg",
             "https://your-hosting-site.com/car-47.jpg", "https://your-hosting-site.com/car-15.jpg",
