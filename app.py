@@ -133,6 +133,55 @@ def load_picks():
 
 picks_df = load_picks()
 
+# Helper function to generate current standings calculations for historical mapping
+def calculate_master_standings():
+    if picks_df.empty:
+        return pd.DataFrame()
+    
+    leaderboard_data = []
+    for _, row in picks_df.iterrows():
+        user_picks = [row['P1'], row['P2'], row['P3'], row['P4'], row['P5'], row['P6'], row['P7'], row['P8']]
+        user_drivers = df[df['Driver'].isin(user_picks)]
+        
+        score_start = user_drivers['Starting_Pos'].sum()
+        score_100 = user_drivers['Pos_100'].sum()
+        score_150 = user_drivers['Pos_150'].sum()
+        score_final = user_drivers['Pos_Final'].sum()
+
+        leaderboard_data.append({
+            "Name": row['Participant'],
+            "Start Pts": int(score_start),
+            "100L Pts": int(score_100),
+            "150L Pts": int(score_150),
+            "Final Pts": int(score_final)
+        })
+        
+    master_df = pd.DataFrame(leaderboard_data)
+    
+    # Explicitly calculate placing sequences dynamically across intervals
+    master_df = master_df.sort_values(by="Start Pts", ascending=True)
+    master_df["Start Place"] = range(1, len(master_df) + 1)
+    
+    if not (df['Pos_100'] == 0).all():
+        master_df = master_df.sort_values(by="100L Pts", ascending=True)
+        master_df["100L Place"] = range(1, len(master_df) + 1)
+    else:
+        master_df["100L Place"] = 0
+
+    if not (df['Pos_150'] == 0).all():
+        master_df = master_df.sort_values(by="150L Pts", ascending=True)
+        master_df["150L Place"] = range(1, len(master_df) + 1)
+    else:
+        master_df["150L Place"] = 0
+
+    if not (df['Pos_Final'] == 0).all():
+        master_df = master_df.sort_values(by="Final Pts", ascending=True)
+        master_df["Final Place"] = range(1, len(master_df) + 1)
+    else:
+        master_df["Final Place"] = 0
+        
+    return master_df
+
 # 4. Clear One-Click Navigation Layout
 tab_options = ["🏆 Standings", "📝 Visual Draft Board", "🏁 Live Field", "📋 Roster View", "📊 Popular Picks"]
 
@@ -151,53 +200,14 @@ if selected_tab == "🏆 Standings":
     if picks_df.empty:
         st.info("No pool sheets logged yet. Select the 'Visual Draft Board' menu above to add yours!")
     else:
-        leaderboard_data = []
-        for _, row in picks_df.iterrows():
-            user_picks = [row['P1'], row['P2'], row['P3'], row['P4'], row['P5'], row['P6'], row['P7'], row['P8']]
-            user_drivers = df[df['Driver'].isin(user_picks)]
-            
-            score_100 = user_drivers['Pos_100'].sum()
-            score_150 = user_drivers['Pos_150'].sum()
-            score_final = user_drivers['Pos_Final'].sum()
-            total_start_positions = user_drivers['Starting_Pos'].sum()
-            
-            if (df['Pos_100'] == 0).all(): score_100 = 0
-            if (df['Pos_150'] == 0).all(): score_150 = 0
-            if (df['Pos_Final'] == 0).all(): score_final = 0
-
-            leaderboard_data.append({
-                "Name": row['Participant'],
-                "100L Pts": int(score_100),
-                "150L Pts": int(score_150),
-                "Final Pts": int(score_final),
-                "Starting Pts": int(total_start_positions)
-            })
-            
-        master_df = pd.DataFrame(leaderboard_data)
+        master_df = calculate_master_standings()
         
-        # Default all placement ranks explicitly to 0 unless milestones actually contain real data
-        if not (df['Pos_100'] == 0).all():
-            master_df = master_df.sort_values(by="100L Pts", ascending=True)
-            master_df["100L Place"] = range(1, len(master_df) + 1)
-        else:
-            master_df["100L Place"] = 0
-
-        if not (df['Pos_150'] == 0).all():
-            master_df = master_df.sort_values(by="150L Pts", ascending=True)
-            master_df["150L Place"] = range(1, len(master_df) + 1)
-        else:
-            master_df["150L Place"] = 0
-
-        if not (df['Pos_Final'] == 0).all():
-            master_df = master_df.sort_values(by="Final Pts", ascending=True)
-            master_df["Final Place"] = range(1, len(master_df) + 1)
-        else:
-            master_df["Final Place"] = 0
-        
+        # Format layout ordering and sorting
         column_order = [
             "Final Place", "100L Place", "150L Place", "Name", 
-            "Final Pts", "100L Pts", "150L Pts", "Starting Pts"
+            "Final Pts", "100L Pts", "150L Pts", "Start Pts"
         ]
+        master_df = master_df.rename(columns={"Start Pts": "Starting Pts"})
         master_df = master_df[column_order].sort_values(by=["Final Place", "Name"])
 
         st.dataframe(
@@ -206,7 +216,7 @@ if selected_tab == "🏆 Standings":
                 "Final Place": st.column_config.NumberColumn("Final Place", format="%d"),
                 "100L Place": st.column_config.NumberColumn("100L Place", format="%d"),
                 "150L Place": st.column_config.NumberColumn("150L Place", format="%d"),
-                "Name": "Name",
+                "Name": st.column_config.TextColumn("Name"),
                 "Final Pts": "Final Pts",
                 "100L Pts": "100L Pts",
                 "150L Pts": "150L Pts",
@@ -408,6 +418,46 @@ elif selected_tab == "📋 Roster View":
         
         sort_basis = "Pos_Final" if df["Pos_Final"].sum() == 561 else ("Pos_150" if df["Pos_150"].sum() == 561 else ("Pos_100" if df["Pos_100"].sum() == 561 else "Starting_Pos"))
         u_df = df[df['Driver'].isin(u_picks)].sort_values(by=sort_basis)
+        
+        # --- NEW: PARTICIPANT OVERALL STANDINGS PLACE GRAPH ---
+        st.subheader("Your Pool Standings Progress Tracker")
+        master_standings = calculate_master_standings()
+        
+        if not master_standings.empty:
+            p_history = master_standings[master_standings['Name'] == user].iloc[0]
+            total_participants = len(master_standings)
+            
+            standings_milestones = ["Start", "Lap 100", "Lap 150", "Finish"]
+            # Map tracking points; if a race segment hasn't been completed yet, exclude it cleanly
+            standings_places = [p_history['Start Place'], p_history['100L Place'], p_history['150L Place'], p_history['Final Place']]
+            
+            pool_chart_records = []
+            for m_lbl, place_val in zip(standings_milestones, standings_places):
+                if m_lbl == "Start" or place_val != 0:
+                    # Invert graph coordinates mathematically to map Place 1 to the upper visual ceiling boundary
+                    graph_coord = (total_participants + 1) - place_val
+                    pool_chart_records.append({
+                        "Milestone": m_lbl,
+                        "GraphPosition": graph_coord,
+                        "RawDisplay": f"#{place_val}"
+                    })
+            
+            if len(pool_chart_records) > 1:
+                pool_chart_df = pd.DataFrame(pool_chart_records)
+                
+                base_pool = alt.Chart(pool_chart_df).encode(
+                    x=alt.X('Milestone:N', sort=standings_milestones, title="Race Milestone", axis=alt.Axis(grid=True, domain=True)),
+                    y=alt.Y('GraphPosition:Q', scale=alt.Scale(domain=[1, total_participants]), title="Pool Standing Rank (Top is 1st)", axis=alt.Axis(labels=False, ticks=False, grid=True, domain=True))
+                )
+                
+                lines_pool = base_pool.mark_line(color="#1f77b4", strokeWidth=3).encode()
+                points_pool = base_pool.mark_circle(size=70, color="#1f77b4")
+                labels_pool = base_pool.mark_text(align='left', dx=8, dy=-8, fontStyle='bold', fontSize=12).encode(text='RawDisplay:N')
+                
+                st.altair_chart((lines_pool + points_pool + labels_pool).properties(height=160), use_container_width=True)
+                st.caption("ℹ️ Charts track overall pool placement. Higher curves mean you are leading the standings ladder.")
+        
+        st.write("---")
         
         # --- ROSTER WIDE MULTI-DRIVER LINE GRAPH ---
         st.subheader("Lineup Milestone Progression Tracker")
