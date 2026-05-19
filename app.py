@@ -25,13 +25,14 @@ st.markdown("""
         color: #000000 !important;
     }
 
-    /* CUSTOM TAB STYLING: Unused tabs = Light Blue, Active Tab = Light Pink */
+    /* CUSTOM TAB STYLING: Enforced white background and explicit blue text for unused tabs across mobile & desktop */
     div[data-testid="stSegmentedControl"] button[aria-checked="false"] {
-        background-color: #e1f5fe !important;
+        background-color: #ffffff !important;
         border: 1px solid #b3e5fc !important;
     }
     div[data-testid="stSegmentedControl"] button[aria-checked="false"] p {
-        color: #0277bd !important; /* Rich blue text for unselected visibility */
+        color: #0277bd !important; /* Rich blue text forced across all devices */
+        -webkit-text-fill-color: #0277bd !important; /* Overrides mobile-specific webkit color inheritance */
     }
     div[data-testid="stSegmentedControl"] button[aria-checked="true"] {
         background-color: #fce4ec !important;
@@ -39,6 +40,7 @@ st.markdown("""
     }
     div[data-testid="stSegmentedControl"] button[aria-checked="true"] p {
         color: #c2185b !important; /* Rich pink/crimson text for selected visibility */
+        -webkit-text-fill-color: #c2185b !important;
         font-weight: bold !important;
     }
     
@@ -268,10 +270,11 @@ if selected_tab == "🏆 Standings":
         if field_chart_records:
             field_chart_df = pd.DataFrame(field_chart_records)
             
+            # Formatted key layout to stack vertically underneath the graph layout
             base_field = alt.Chart(field_chart_df).encode(
                 x=alt.X('Milestone:N', sort=standings_milestones, title="Race Milestone", axis=alt.Axis(grid=True, domain=True, labelAngle=0)),
                 y=alt.Y('GraphPosition:Q', scale=alt.Scale(domain=[1, total_participants]), title="Pool Standing Rank (Top is 1st)", axis=alt.Axis(labels=False, ticks=False, grid=True, domain=True)),
-                color=alt.Color('Participant:N', legend=alt.Legend(orient='bottom', titleColor='black', labelColor='black'))
+                color=alt.Color('Participant:N', legend=alt.Legend(orient='bottom', direction='vertical', titleColor='black', labelColor='black'))
             )
             
             lines_field = base_field.mark_line(strokeWidth=3).encode()
@@ -562,10 +565,11 @@ elif selected_tab == "📋 Roster View":
         if chart_records:
             chart_df = pd.DataFrame(chart_records)
             
+            # Formatted key layout to stack vertically underneath the graph layout
             base_multi = alt.Chart(chart_df).encode(
                 x=alt.X('Milestone:N', sort=milestones, title="Race Milestone", axis=alt.Axis(grid=True, domain=True)),
                 y=alt.Y('GraphPosition:Q', scale=alt.Scale(domain=[1, 33]), title="Track Position Rank (Top is Lead)", axis=alt.Axis(labels=False, ticks=False, grid=True, domain=True)),
-                color=alt.Color('Driver:N', legend=alt.Legend(orient='bottom', titleColor='black', labelColor='black'))
+                color=alt.Color('Driver:N', legend=alt.Legend(orient='bottom', direction='vertical', titleColor='black', labelColor='black'))
             )
             
             lines_multi = base_multi.mark_line().encode()
