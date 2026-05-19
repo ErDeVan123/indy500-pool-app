@@ -263,19 +263,18 @@ def calculate_master_standings():
     return master_df
 
 # 4. Navigation Layout using native st.tabs
-tab_names = ["🏆 Standings", "📝 Visual Draft Board", "🏁 Live Field", "📋 Roster View", "📊 Popular Picks"]
+tab_names = ["🏆 Standings", "📝 Draft Drivers", "🏁 Milestone Ranks", "📋 Roster View", "📊 Popular Picks"]
 t1, t2, t3, t4, t5 = st.tabs(tab_names)
 
 # --- VIEW 1: OVERALL STANDINGS ---
 with t1:
     st.header("Overall Standings")
     if picks_df.empty:
-        st.info("No pool sheets logged yet. Select the 'Visual Draft Board' tab above to add yours!")
+        st.info("No pool sheets logged yet. Select the 'Draft Drivers' tab above to add yours!")
     else:
         master_df = calculate_master_standings()
         
         # --- DECLUTTERED & SCROLLABLE PERFORMANCE TRACKER ---
-        st.subheader("Pool Field Performance Tracker")
         total_participants = len(master_df)
         standings_milestones = ["Start", "Lap 100", "Lap 150", "Finish"]
         
@@ -297,7 +296,7 @@ with t1:
             
             base_field = alt.Chart(field_chart_df).encode(
                 x=alt.X('Milestone:N', sort=standings_milestones, title="Race Milestone", axis=alt.Axis(grid=True, domain=True, labelAngle=0)),
-                y=alt.Y('GraphPosition:Q', scale=alt.Scale(domain=[1, total_participants]), title="Pool Standing Rank (Top is 1st)", axis=alt.Axis(labels=False, ticks=False, grid=True, domain=True)),
+                y=alt.Y('GraphPosition:Q', scale=alt.Scale(domain=[1, total_participants]), title="Rank", axis=alt.Axis(labels=False, ticks=False, grid=True, domain=True)),
                 color=alt.Color('Participant:N', legend=alt.Legend(orient='bottom', direction='vertical', titleColor='black', labelColor='black'))
             )
             
@@ -552,7 +551,7 @@ with t4:
                 
                 base_pool = alt.Chart(pool_chart_df).encode(
                     x=alt.X('Milestone:N', sort=standings_milestones, title="Race Milestone", axis=alt.Axis(grid=True, domain=True)),
-                    y=alt.Y('GraphPosition:Q', scale=alt.Scale(domain=[1, total_participants]), title="Pool Standing Rank (Top is 1st)", axis=alt.Axis(labels=False, ticks=False, grid=True, domain=True))
+                    y=alt.Y('GraphPosition:Q', scale=alt.Scale(domain=[1, total_participants]), title="Rank", axis=alt.Axis(labels=False, ticks=False, grid=True, domain=True))
                 )
                 
                 lines_pool = base_pool.mark_line(color="#1f77b4", strokeWidth=3).encode()
