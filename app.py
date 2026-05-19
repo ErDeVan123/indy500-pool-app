@@ -278,75 +278,11 @@ def calculate_master_standings():
         
     return master_df
 
-# 4. Navigation Layout using native st.tabs
-tab_names = ["🏆 Standings", "📝 Draft Drivers", "🏁 Milestone Ranks", "📋 View Rosters", "📊 Popular Picks"]
-t1, t2, t3, t4, t5 = st.tabs(tab_names)
+# 4. Navigation Layout rearranged based on preference
+tab_names = ["📝 Draft Drivers", "📋 View Rosters", "📊 Popular Picks", "🏁 Milestone Ranks", "🏆 Standings"]
+t2, t4, t5, t3, t1 = st.tabs(tab_names)
 
-# --- VIEW 1: OVERALL STANDINGS ---
-with t1:
-    st.header("Overall Standings")
-    if picks_df.empty:
-        st.info("No pool sheets logged yet. Select the 'Draft Drivers' tab above to add yours!")
-    else:
-        master_df = calculate_master_standings()
-        
-        # --- SCROLLABLE PERFORMANCE TRACKER ---
-        total_participants = len(master_df)
-        standings_milestones = ["Start", "Lap 100", "Lap 150", "Finish"]
-        
-        field_chart_records = []
-        for _, p_row in master_df.iterrows():
-            places = [p_row['Start Place'], p_row['100L Place'], p_row['150L Place'], p_row['Final Place']]
-            for m_lbl, place_val in zip(standings_milestones, places):
-                if m_lbl == "Start" or place_val != 0:
-                    graph_coord = (total_participants + 1) - place_val
-                    field_chart_records.append({
-                        "Milestone": m_lbl,
-                        "GraphPosition": graph_coord,
-                        "RawDisplay": f"#{place_val}",
-                        "Participant": p_row['Name']
-                    })
-                    
-        if field_chart_records:
-            field_chart_df = pd.DataFrame(field_chart_records)
-            
-            base_field = alt.Chart(field_chart_df).encode(
-                x=alt.X('Milestone:N', sort=standings_milestones, title="Race Milestone", axis=alt.Axis(grid=True, domain=True, labelAngle=0)),
-                y=alt.Y('GraphPosition:Q', scale=alt.Scale(domain=[1, total_participants]), title="Rank", axis=alt.Axis(labels=False, ticks=False, grid=True, domain=True)),
-                color=alt.Color('Participant:N', legend=alt.Legend(orient='bottom', direction='vertical', titleColor='black', labelColor='black'))
-            )
-            
-            lines_field = base_field.mark_line(strokeWidth=3).encode()
-            points_field = base_field.mark_circle(size=60)
-            labels_field = base_field.mark_text(align='left', dx=7, dy=-7, fontStyle='bold', fontSize=11, color='black').encode(text='RawDisplay:N')
-            
-            chart_obj = (lines_field + points_field + labels_field).properties(width=800, height=320, background='white').configure_axis(
-                labelColor='black', titleColor='black'
-            )
-            
-            st.markdown('<div class="scroll-container">', unsafe_allow_html=True)
-            st.altair_chart(chart_obj, use_container_width=False)
-            st.markdown('</div>', unsafe_allow_html=True)
-            st.caption("ℹ️ Swipe right on the graph above to track later race milestones.")
-            st.write("---")
-
-        column_order = ["Final Place", "Name", "Final Pts", "100L Pts", "150L Pts"]
-        master_df = master_df[column_order].sort_values(by=["Final Place", "Name"])
-
-        st.dataframe(
-            master_df, 
-            column_config={
-                "Final Place": st.column_config.NumberColumn("Rank", format="%d"),
-                "Name": st.column_config.TextColumn("Participant"),
-                "Final Pts": "Fin Pts",
-                "100L Pts": "Lap 100",
-                "150L Pts": "Lap 150"
-            },
-            use_container_width=True, 
-            hide_index=True
-        )
-
-# --- VIEW 2: HARD-VALIDATED DRAFT BOARD ---
+# --- VIEW 2: HARD-VALIDATED DRAFT BOARD (Now 1st) ---
 with t2:
     st.markdown("Select exactly **8 drivers**. Maximum **3 from Rows 1-3**.")
     
@@ -420,110 +356,7 @@ with t2:
         st.session_state["selected_pool"] = []
         st.rerun()
 
-# --- VIEW 3: LIVE FIELD RUNNING ORDER ---
-with t3:
-    sort_basis_label = st.selectbox(
-        "Milestone to display:",
-        options=["Starting Order", "Running Order @ Lap 100", "Running Order @ Lap 150", "Finishing Order"]
-    )
-    
-    if sort_basis_label == "Running Order @ Lap 100":
-        sort_by_col = "Pos_100"
-        display_title = "Running Order @ Lap 100"
-    elif sort_basis_label == "Running Order @ Lap 150":
-        sort_by_col = "Pos_150"
-        display_title = "Running Order @ Lap 150"
-    elif sort_basis_label == "Finishing Order":
-        sort_by_col = "Pos_Final"
-        display_title = "Finishing Order"
-    else:
-        sort_by_col = "Starting_Pos"
-        display_title = "Starting Order"
-
-    st.write("---")
-    st.subheader(display_title)
-    
-    sorted_df = df.copy()
-    if sort_by_col != "Starting_Pos":
-        sorted_df["sort_key"] = sorted_df[sort_by_col].apply(lambda x: 99 if x == 0 else x)
-        sorted_df = sorted_df.sort_values(by=["sort_key", "Starting_Pos"], ascending=True)
-    else:
-        sorted_df = sorted_df.sort_values(by="Starting_Pos", ascending=True)
-    
-    for _, row in sorted_df.iterrows():
-        with st.container(border=True):
-            col1, col2 = st.columns([4.0, 4.0])
-            with col1:
-                current_val = row[sort_by_col]
-                metric_label = f"P{current_val}" if current_val != 0 else "--"
-                st.metric("Current Order", metric_label)
-                st.subheader(row['Driver'])
-                st.caption(f"#{row['Car_Num']} | {row['Team']}")
-                
-                # --- INDIVIDUAL FIELD DRIVER PROFILE CHART ---
-                m_labels = ["Start", "Lap 100", "Lap 150", "Finish"]
-                m_vals = [row['Starting_Pos'], row['Pos_100'], row['Pos_150'], row['Pos_Final']]
-                
-                driver_history = []
-                for lbl, val in zip(m_labels, m_vals):
-                    if lbl == "Start" or val != 0:
-                        driver_history.append({"Milestone": lbl, "GraphPosition": 34 - val, "RawDisplay": f"P{val}"})
-                        
-                if len(driver_history) > 1:
-                    single_driver_df = pd.DataFrame(driver_history)
-                    
-                    base = alt.Chart(single_driver_df).encode(
-                        x=alt.X('Milestone:N', sort=m_labels, title="Milestone", axis=alt.Axis(grid=True, domain=True)),
-                        y=alt.Y('GraphPosition:Q', scale=alt.Scale(domain=[1, 33]), title="Rank", axis=alt.Axis(labels=False, ticks=False, grid=True, domain=True))
-                    )
-                    
-                    lines = base.mark_line(color="#ff4b4b").encode()
-                    points = base.mark_circle(size=60, color="#ff4b4b")
-                    labels = base.mark_text(align='left', dx=7, dy=-7, fontStyle='bold', fontSize=11, color='black').encode(text='RawDisplay:N')
-                    
-                    chart_render = (lines + points + labels).properties(height=175, background='white').configure_axis(
-                        labelColor='black', titleColor='black'
-                    )
-                    st.altair_chart(chart_render, use_container_width=True)
-            with col2:
-                st.image(row['Car_Pic'])
-
-    # --- MOVING TIMING TOWER MANAGEMENT SECTION TO BOTTOM ---
-    st.write("---")
-    with st.expander("🛠️ Live Race Timing Tower Management (Input Milestone Positions Here)"):
-        st.markdown("Select placement ranks via the dropdown boxes. Uncompleted points map safely to `0`.")
-        
-        position_dropdown_choices = list(range(34))
-        
-        updated_rows = []
-        for idx, row in df.sort_values(by="Starting_Pos").iterrows():
-            st.markdown(f"**#{row['Car_Num']} - {row['Driver']}**")
-            box1, box2, box3, box4 = st.columns(4)
-            
-            with box1:
-                st.selectbox("Grid Start", options=[int(row['Starting_Pos'])], disabled=True, key=f"start_drop_{idx}")
-            with box2:
-                p100_val = st.selectbox("Pos @ 100 Laps", options=position_dropdown_choices, index=int(row['Pos_100']), key=f"p100_drop_{idx}")
-            with box3:
-                p150_val = st.selectbox("Pos @ 150 Laps", options=position_dropdown_choices, index=int(row['Pos_150']), key=f"p150_drop_{idx}")
-            with box4:
-                pfin_val = st.selectbox("Finish Position", options=position_dropdown_choices, index=int(row['Pos_Final']), key=f"pfin_drop_{idx}")
-                
-            updated_rows.append({
-                "Driver": row['Driver'],
-                "Pos_100": p100_val,
-                "Pos_150": p150_val,
-                "Pos_Final": pfin_val
-            })
-            st.write("---")
-            
-        if st.button("Save Race Positions", type="primary"):
-            save_df = pd.DataFrame(updated_rows)
-            save_df.to_csv(POSITIONS_FILE, index=False)
-            st.success("Track intervals securely recorded!")
-            st.rerun()
-
-# --- VIEW 4: ROSTER VIEW ---
+# --- VIEW 4: ROSTER VIEW (Now 2nd) ---
 with t4:
     if picks_df.empty:
         st.info("No active rosters submitted.")
@@ -532,10 +365,8 @@ with t4:
         u_row = picks_df[picks_df['Participant'] == user].iloc[0]
         u_picks = [u_row['P1'], u_row['P2'], u_row['P3'], u_row['P4'], u_row['P5'], u_row['P6'], u_row['P7'], u_row['P8']]
         
-        # Check if the race is officially marked finished (sum of positions 1 to 33 equals 561)
         race_is_finished = df["Pos_Final"].sum() == 561
         
-        # Sort by finishing placement if complete, else default down to earlier milestones or qualifying grid layout
         if race_is_finished:
             sort_basis = "Pos_Final"
         else:
@@ -543,7 +374,6 @@ with t4:
             
         u_df = df[df['Driver'].isin(u_picks)].sort_values(by=sort_basis)
         
-        # --- PARTICIPANT OVERALL STANDINGS PLACE GRAPH ---
         st.subheader(f"{user}'s Quest for Milk Drinking Immortality")
         master_standings = calculate_master_standings()
         
@@ -584,7 +414,6 @@ with t4:
         
         st.write("---")
         
-        # --- ROSTER WIDE MULTI-DRIVER LINE GRAPH ---
         st.subheader("Driver lineup progression")
         chart_records = []
         milestones = ["Start", "Lap 100", "Lap 150", "Finish"]
@@ -609,13 +438,7 @@ with t4:
                     'GraphPosition:Q', 
                     scale=alt.Scale(domain=[1, 33]), 
                     title="Rank", 
-                    axis=alt.Axis(
-                        grid=True, 
-                        domain=True, 
-                        tickCount=7, 
-                        labels=False, 
-                        ticks=False
-                    )
+                    axis=alt.Axis(grid=True, domain=True, tickCount=7, labels=False, ticks=False)
                 ),
                 color=alt.Color('Driver:N', legend=alt.Legend(orient='bottom', direction='vertical', titleColor='black', labelColor='black'))
             )
@@ -624,10 +447,7 @@ with t4:
             points_multi = base_multi.mark_circle(size=55)
             labels_multi = base_multi.mark_text(align='left', dx=6, dy=-6, fontStyle='bold', fontSize=10, color='black').encode(text='RawDisplay:N')
             
-            chart_render_multi = (lines_multi + points_multi + labels_multi).properties(
-                height=520, 
-                background='white'
-            ).configure_axis(
+            chart_render_multi = (lines_multi + points_multi + labels_multi).properties(height=520, background='white').configure_axis(
                 labelColor='black', titleColor='black'
             )
             st.altair_chart(chart_render_multi, use_container_width=True)
@@ -642,7 +462,6 @@ with t4:
                     st.caption(f"#{row['Car_Num']} | {row['Team']}")
                     st.caption(f"Start: P{row['Starting_Pos']} | Lap 100: P{row['Pos_100']} | Lap 150: P{row['Pos_150']} | Finish: P{row['Pos_Final']}")
                     
-                    # Compute & render positional shift if the race is completed
                     if race_is_finished:
                         pos_differential = int(row['Starting_Pos']) - int(row['Pos_Final'])
                         if pos_differential > 0:
@@ -655,12 +474,13 @@ with t4:
                 with col2:
                     st.image(row['Car_Pic'])
 
-# --- VIEW 5: POPULAR PICKS METRICS ---
+# --- VIEW 5: POPULAR PICKS METRICS (Now 3rd & Redesigned) ---
 with t5:
-    st.header("Participant Pick Summary")
+    st.header("Who drafted who?")
     if picks_df.empty:
         st.info("No picks drafted yet.")
     else:
+        # Build counting hashmap
         driver_pick_map = {driver: [] for driver in df['Driver'].tolist()}
         for _, row in picks_df.iterrows():
             p_name = row['Participant']
@@ -668,51 +488,224 @@ with t5:
                 if p in driver_pick_map:
                     driver_pick_map[p].append(p_name)
                     
-        for _, row in df.sort_values(by="Starting_Pos").iterrows():
+        # Match count values directly to master dataframe structure
+        df_sorted = df.copy()
+        df_sorted['Pick_Count'] = df_sorted['Driver'].map(lambda x: len(driver_pick_map[x]))
+        
+        # Priority 1: Most frequently picked. Priority 2: Standard track order fallback sync.
+        df_sorted = df_sorted.sort_values(by=["Pick_Count", "Starting_Pos"], ascending=[False, True])
+                        
+        for _, row in df_sorted.iterrows():
             d_name = row['Driver']
             choosing_p = driver_pick_map[d_name]
+            
             with st.container(border=True):
-                col1, col2 = st.columns([4.0, 4.0])
-                with col1:
-                    st.subheader(d_name)
-                    st.caption(f"Car #{row['Car_Num']} | Start: P{row['Starting_Pos']}")
-                    if choosing_p:
-                        st.markdown(f"**Drafted By:** {', '.join(choosing_p)}")
-                    else:
-                        st.markdown("*Nobody has drafted this driver yet.*")
-                        
-                    # --- POPULAR PICKS INDIVIDUAL DRIVER PROFILE CHART ---
-                    m_labels = ["Start", "Lap 100", "Lap 150", "Finish"]
-                    m_vals = [row['Starting_Pos'], row['Pos_100'], row['Pos_150'], row['Pos_Final']]
+                # Layout reordered down a unified vertical card profile
+                st.subheader(d_name)
+                st.caption(f"Car #{row['Car_Num']} | Start: P{row['Starting_Pos']} | Total Drafts: {len(choosing_p)}")
+                
+                # Element 1: Image immediately beneath headers
+                st.image(row['Car_Pic'])
+                
+                # Element 2: Draft tracking strings
+                if choosing_p:
+                    st.markdown(f"**Drafted By:** {', '.join(choosing_p)}")
+                else:
+                    st.markdown("*Nobody has drafted this driver yet.*")
                     
-                    driver_history = []
-                    for lbl, val in zip(m_labels, m_vals):
-                        if lbl == "Start" or val != 0:
-                            driver_history.append({"Milestone": lbl, "GraphPosition": 34 - val, "RawDisplay": f"P{val}"})
-                            
-                    if len(driver_history) > 1:
-                        single_driver_df = pd.DataFrame(driver_history)
+                # Element 3: Graphical progression tracker at the bottom of the card block
+                m_labels = ["Start", "Lap 100", "Lap 150", "Finish"]
+                m_vals = [row['Starting_Pos'], row['Pos_100'], row['Pos_150'], row['Pos_Final']]
+                
+                driver_history = []
+                for lbl, val in zip(m_labels, m_vals):
+                    if lbl == "Start" or val != 0:
+                        driver_history.append({"Milestone": lbl, "GraphPosition": 34 - val, "RawDisplay": f"P{val}"})
                         
-                        base_pop = alt.Chart(single_driver_df).encode(
-                            x=alt.X('Milestone:N', sort=m_labels, title="Milestone", axis=alt.Axis(grid=True, domain=True)),
-                            y=alt.Y('GraphPosition:Q', scale=alt.Scale(domain=[1, 33]), title="Rank", axis=alt.Axis(labels=False, ticks=False, grid=True, domain=True))
-                        )
+                if len(driver_history) > 1:
+                    single_driver_df = pd.DataFrame(driver_history)
+                    
+                    base_pop = alt.Chart(single_driver_df).encode(
+                        x=alt.X('Milestone:N', sort=m_labels, title="Milestone", axis=alt.Axis(grid=True, domain=True)),
+                        y=alt.Y('GraphPosition:Q', scale=alt.Scale(domain=[1, 33]), title="Rank", axis=alt.Axis(labels=False, ticks=False, grid=True, domain=True))
+                    )
+                    
+                    lines_pop = base_pop.mark_line(color="#ff4b4b").encode()
+                    points_pop = base_pop.mark_circle(size=60, color="#ff4b4b")
+                    labels_pop = base_pop.mark_text(align='left', dx=7, dy=-7, fontStyle='bold', fontSize=11, color='black').encode(text='RawDisplay:N')
+                    
+                    chart_render_pop = (lines_pop + points_pop + labels_pop).properties(height=140, background='white').configure_axis(
+                        labelColor='black', titleColor='black'
+                    )
+                    st.altair_chart(chart_render_pop, use_container_width=True)
+
+# --- VIEW 3: LIVE FIELD RUNNING ORDER (Now 4th) ---
+with t3:
+    sort_basis_label = st.selectbox(
+        "Milestone to display:",
+        options=["Starting Order", "Running Order @ Lap 100", "Running Order @ Lap 150", "Finishing Order"]
+    )
+    
+    if sort_basis_label == "Running Order @ Lap 100":
+        sort_by_col = "Pos_100"
+        display_title = "Running Order @ Lap 100"
+    elif sort_basis_label == "Running Order @ Lap 150":
+        sort_by_col = "Pos_150"
+        display_title = "Running Order @ Lap 150"
+    elif sort_basis_label == "Finishing Order":
+        sort_by_col = "Pos_Final"
+        display_title = "Finishing Order"
+    else:
+        sort_by_col = "Starting_Pos"
+        display_title = "Starting Order"
+
+    st.write("---")
+    st.subheader(display_title)
+    
+    sorted_df = df.copy()
+    if sort_by_col != "Starting_Pos":
+        sorted_df["sort_key"] = sorted_df[sort_by_col].apply(lambda x: 99 if x == 0 else x)
+        sorted_df = sorted_df.sort_values(by=["sort_key", "Starting_Pos"], ascending=True)
+    else:
+        sorted_df = sorted_df.sort_values(by="Starting_Pos", ascending=True)
+    
+    for _, row in sorted_df.iterrows():
+        with st.container(border=True):
+            col1, col2 = st.columns([4.0, 4.0])
+            with col1:
+                current_val = row[sort_by_col]
+                metric_label = f"P{current_val}" if current_val != 0 else "--"
+                st.metric("Current Order", metric_label)
+                st.subheader(row['Driver'])
+                st.caption(f"#{row['Car_Num']} | {row['Team']}")
+                
+                m_labels = ["Start", "Lap 100", "Lap 150", "Finish"]
+                m_vals = [row['Starting_Pos'], row['Pos_100'], row['Pos_150'], row['Pos_Final']]
+                
+                driver_history = []
+                for lbl, val in zip(m_labels, m_vals):
+                    if lbl == "Start" or val != 0:
+                        driver_history.append({"Milestone": lbl, "GraphPosition": 34 - val, "RawDisplay": f"P{val}"})
                         
-                        lines_pop = base_pop.mark_line(color="#ff4b4b").encode()
-                        points_pop = base_pop.mark_circle(size=60, color="#ff4b4b")
-                        labels_pop = base_pop.mark_text(align='left', dx=7, dy=-7, fontStyle='bold', fontSize=11, color='black').encode(text='RawDisplay:N')
-                        
-                        chart_render_pop = (lines_pop + points_pop + labels_pop).properties(height=175, background='white').configure_axis(
-                            labelColor='black', titleColor='black'
-                        )
-                        st.altair_chart(chart_render_pop, use_container_width=True)
-                with col2:
-                    st.image(row['Car_Pic'])
+                if len(driver_history) > 1:
+                    single_driver_df = pd.DataFrame(driver_history)
+                    
+                    base = alt.Chart(single_driver_df).encode(
+                        x=alt.X('Milestone:N', sort=m_labels, title="Milestone", axis=alt.Axis(grid=True, domain=True)),
+                        y=alt.Y('GraphPosition:Q', scale=alt.Scale(domain=[1, 33]), title="Rank", axis=alt.Axis(labels=False, ticks=False, grid=True, domain=True))
+                    )
+                    
+                    lines = base.mark_line(color="#ff4b4b").encode()
+                    points = base.mark_circle(size=60, color="#ff4b4b")
+                    labels = base.mark_text(align='left', dx=7, dy=-7, fontStyle='bold', fontSize=11, color='black').encode(text='RawDisplay:N')
+                    
+                    chart_render = (lines + points + labels).properties(height=175, background='white').configure_axis(
+                        labelColor='black', titleColor='black'
+                    )
+                    st.altair_chart(chart_render, use_container_width=True)
+            with col2:
+                st.image(row['Car_Pic'])
+
+    st.write("---")
+    with st.expander("🛠️ Live Race Timing Tower Management (Input Milestone Positions Here)"):
+        st.markdown("Select placement ranks via the dropdown boxes. Uncompleted points map safely to `0`.")
+        
+        position_dropdown_choices = list(range(34))
+        
+        updated_rows = []
+        for idx, row in df.sort_values(by="Starting_Pos").iterrows():
+            st.markdown(f"**#{row['Car_Num']} - {row['Driver']}**")
+            box1, box2, box3, box4 = st.columns(4)
+            
+            with box1:
+                st.selectbox("Grid Start", options=[int(row['Starting_Pos'])], disabled=True, key=f"start_drop_{idx}")
+            with box2:
+                p100_val = st.selectbox("Pos @ 100 Laps", options=position_dropdown_choices, index=int(row['Pos_100']), key=f"p100_drop_{idx}")
+            with box3:
+                p150_val = st.selectbox("Pos @ 150 Laps", options=position_dropdown_choices, index=int(row['Pos_150']), key=f"p150_drop_{idx}")
+            with box4:
+                pfin_val = st.selectbox("Finish Position", options=position_dropdown_choices, index=int(row['Pos_Final']), key=f"pfin_drop_{idx}")
+                
+            updated_rows.append({
+                "Driver": row['Driver'],
+                "Pos_100": p100_val,
+                "Pos_150": p150_val,
+                "Pos_Final": pfin_val
+            })
+            st.write("---")
+            
+        if st.button("Save Race Positions", type="primary"):
+            save_df = pd.DataFrame(updated_rows)
+            save_df.to_csv(POSITIONS_FILE, index=False)
+            st.success("Track intervals securely recorded!")
+            st.rerun()
+
+# --- VIEW 1: OVERALL STANDINGS (Now Last) ---
+with t1:
+    st.header("Overall Standings")
+    if picks_df.empty:
+        st.info("No pool sheets logged yet. Select the 'Draft Drivers' tab above to add yours!")
+    else:
+        master_df = calculate_master_standings()
+        
+        total_participants = len(master_df)
+        standings_milestones = ["Start", "Lap 100", "Lap 150", "Finish"]
+        
+        field_chart_records = []
+        for _, p_row in master_df.iterrows():
+            places = [p_row['Start Place'], p_row['100L Place'], p_row['150L Place'], p_row['Final Place']]
+            for m_lbl, place_val in zip(standings_milestones, places):
+                if m_lbl == "Start" or place_val != 0:
+                    graph_coord = (total_participants + 1) - place_val
+                    field_chart_records.append({
+                        "Milestone": m_lbl,
+                        "GraphPosition": graph_coord,
+                        "RawDisplay": f"#{place_val}",
+                        "Participant": p_row['Name']
+                    })
+                    
+        if field_chart_records:
+            field_chart_df = pd.DataFrame(field_chart_records)
+            
+            base_field = alt.Chart(field_chart_df).encode(
+                x=alt.X('Milestone:N', sort=standings_milestones, title="Race Milestone", axis=alt.Axis(grid=True, domain=True, labelAngle=0)),
+                y=alt.Y('GraphPosition:Q', scale=alt.Scale(domain=[1, total_participants]), title="Rank", axis=alt.Axis(labels=False, ticks=False, grid=True, domain=True)),
+                color=alt.Color('Participant:N', legend=alt.Legend(orient='bottom', direction='vertical', titleColor='black', labelColor='black'))
+            )
+            
+            lines_field = base_field.mark_line(strokeWidth=3).encode()
+            points_field = base_field.mark_circle(size=60)
+            labels_field = base_field.mark_text(align='left', dx=7, dy=-7, fontStyle='bold', fontSize=11, color='black').encode(text='RawDisplay:N')
+            
+            chart_obj = (lines_field + points_field + labels_field).properties(width=800, height=320, background='white').configure_axis(
+                labelColor='black', titleColor='black'
+            )
+            
+            st.markdown('<div class="scroll-container">', unsafe_allow_html=True)
+            st.altair_chart(chart_obj, use_container_width=False)
+            st.markdown('</div>', unsafe_allow_html=True)
+            st.caption("ℹ️ Swipe right on the graph above to track later race milestones.")
+            st.write("---")
+
+        column_order = ["Final Place", "Name", "Final Pts", "100L Pts", "150L Pts"]
+        master_df = master_df[column_order].sort_values(by=["Final Place", "Name"])
+
+        st.dataframe(
+            master_df, 
+            column_config={
+                "Final Place": st.column_config.NumberColumn("Rank", format="%d"),
+                "Name": st.column_config.TextColumn("Participant"),
+                "Final Pts": "Fin Pts",
+                "100L Pts": "Lap 100",
+                "150L Pts": "Lap 150"
+            },
+            use_container_width=True, 
+            hide_index=True
+        )
 
 # --- SYSTEM ADMIN COMMAND DECK ---
 st.write("---")
 with st.expander("🛠️ Admin Command Deck (Edit / Delete Entry Controls)"):
-    
     st.subheader("Reset Race Milestone Positions")
     st.markdown("Use this during testing to instantly clear all manual inputs for Lap 100, Lap 150, and Final standings, resetting fields clean to 0.")
     
