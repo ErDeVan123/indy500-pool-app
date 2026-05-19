@@ -20,9 +20,14 @@ st.markdown("""
         background-color: #ffffff;
     }
     
-    /* FORCE TEXT VISIBILITY ON MOBILE/DARK OVERRIDES */
-    .stApp h1, .stApp h2, .stApp h3, .stApp p, .stApp span, .stApp label, .stApp div, .stApp small {
+    /* TARGETED MOBILE TEXT FIX: Safe elements that won't break tabs or borders */
+    .stApp h1, .stApp h2, .stApp h3, .stApp p, .stApp label, .stApp small, .stMarkdown p {
         color: #000000 !important;
+    }
+
+    /* PRESERVE SEGMENTED CONTROL / TAB TEXT CONTRAST */
+    [data-testid="stSegmentedControl"] button p {
+        color: inherit !important;
     }
     
     /* Target images inside columns to center vertically and fit horizontally */
