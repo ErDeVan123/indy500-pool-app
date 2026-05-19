@@ -49,7 +49,7 @@ st.markdown("""
 
 st.title("🏎️ Indy 500: VanGutz Style")
 
-# 1. Base Starting Grid Data
+# 1. Base Starting Grid Data (All arrays carefully aligned to exactly 33 rows)
 @st.cache_data
 def get_base_drivers():
     data = {
@@ -90,7 +90,14 @@ def get_base_drivers():
             "https://your-hosting-site.com/car-12.jpg", "https://your-hosting-site.com/car-60.jpg",
             "https://your-hosting-site.com/car-14.jpg", "https://your-hosting-site.com/car-5.jpg",
             "https://your-hosting-site.com/car-8.jpg", "https://your-hosting-site.com/car-23.jpg",
-            "https://your-running-site.com/car-2.jpg", "https://your-hosting-site.com/car-18.jpg",
+            "https://your-hosting-site.com/car-3.jpg", "https://your-hosting-site.com/car-9.jpg",
+            "https://your-hosting-site.com/car-76.jpg", "https://your-hosting-site.com/car-75.jpg",
+            "https://your-hosting-site.com/car-33.jpg", "https://your-hosting-site.com/car-6.jpg",
+            "https://your-hosting-site.com/car-21.jpg", "https://your-hosting-site.com/car-66.jpg",
+            "https://your-hosting-site.com/car-28.jpg", "https://your-hosting-site.com/car-7.jpg",
+            "https://your-hosting-site.com/car-26.jpg", "https://your-hosting-site.com/car-6b.jpg",
+            "https://your-hosting-site.com/car-45.jpg", "https://your-hosting-site.com/car-31.jpg",
+            "https://your-running-site.com/car-2.jpg",  "https://your-hosting-site.com/car-18.jpg",
             "https://your-hosting-site.com/car-27.jpg", "https://your-hosting-site.com/car-11.jpg",
             "https://your-hosting-site.com/car-47.jpg", "https://your-hosting-site.com/car-15.jpg",
             "https://your-hosting-site.com/car-19.jpg", "https://your-hosting-site.com/car-51.jpg",
@@ -364,14 +371,13 @@ elif selected_tab == "🏁 Live Field":
                 st.caption(f"#{row['Car_Num']} | {row['Team']}")
                 st.markdown(f"🏁 **P{row['Pos_100']}** (100L) | **P{row['Pos_150']}** (150L) | **P{row['Pos_Final']}** (Fin)")
                 
-                # --- INDIVIDUAL FIELD DRIVER PROFILE CHART (LOWER-LEFT INTERSECTION) ---
+                # --- INDIVIDUAL FIELD DRIVER PROFILE CHART ---
                 m_labels = ["Start", "Lap 100", "Lap 150", "Finish"]
                 m_vals = [row['Starting_Pos'], row['Pos_100'], row['Pos_150'], row['Pos_Final']]
                 
                 driver_history = []
                 for lbl, val in zip(m_labels, m_vals):
                     if lbl == "Start" or val != 0:
-                        # Invert position logic mathematically so 1 sits at the graph ceiling (34 - position)
                         driver_history.append({"Milestone": lbl, "GraphPosition": 34 - val, "RawDisplay": f"P{val}"})
                         
                 if len(driver_history) > 1:
@@ -403,7 +409,7 @@ elif selected_tab == "📋 Roster View":
         sort_basis = "Pos_Final" if df["Pos_Final"].sum() == 561 else ("Pos_150" if df["Pos_150"].sum() == 561 else ("Pos_100" if df["Pos_100"].sum() == 561 else "Starting_Pos"))
         u_df = df[df['Driver'].isin(u_picks)].sort_values(by=sort_basis)
         
-        # --- ROSTER WIDE MULTI-DRIVER LINE GRAPH (LOWER-LEFT INTERSECTION) ---
+        # --- ROSTER WIDE MULTI-DRIVER LINE GRAPH ---
         st.subheader("Lineup Milestone Progression Tracker")
         chart_records = []
         milestones = ["Start", "Lap 100", "Lap 150", "Finish"]
@@ -470,7 +476,7 @@ elif selected_tab == "📊 Popular Picks":
                     else:
                         st.markdown("*Nobody has drafted this driver yet.*")
                         
-                    # --- POPULAR PICKS INDIVIDUAL DRIVER PROFILE CHART (LOWER-LEFT INTERSECTION) ---
+                    # --- POPULAR PICKS INDIVIDUAL DRIVER PROFILE CHART ---
                     m_labels = ["Start", "Lap 100", "Lap 150", "Finish"]
                     m_vals = [row['Starting_Pos'], row['Pos_100'], row['Pos_150'], row['Pos_Final']]
                     
