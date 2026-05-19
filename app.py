@@ -566,7 +566,7 @@ elif selected_tab == "📋 Roster View":
         
         st.write("---")
         
-        # --- ROSTER WIDE MULTI-DRIVER LINE GRAPH ---
+        # --- ROSTER WIDE MULTI-DRIVER LINE GRAPH (FIXED STRETCH & AXIS HEIGHT) ---
         st.subheader("Lineup Milestone Progression Tracker")
         chart_records = []
         milestones = ["Start", "Lap 100", "Lap 150", "Finish"]
@@ -579,7 +579,7 @@ elif selected_tab == "📋 Roster View":
                         "Milestone": m_label,
                         "GraphPosition": 34 - pt,
                         "RawDisplay": f"P{pt}",
-                        "Driver": f"{row['Driver']} (#{row['Car_Num']})"
+                        "Driver": f"{row['Driver']} (# {row['Car_Num']})"
                     })
                     
         if chart_records:
@@ -587,15 +587,31 @@ elif selected_tab == "📋 Roster View":
             
             base_multi = alt.Chart(chart_df).encode(
                 x=alt.X('Milestone:N', sort=milestones, title="Race Milestone", axis=alt.Axis(grid=True, domain=True)),
-                y=alt.Y('GraphPosition:Q', scale=alt.Scale(domain=[1, 33]), title="Track Position Rank (Top is Lead)", axis=alt.Axis(labels=False, ticks=False, grid=True, domain=True)),
+                # Force precise structural intervals for every 5 ranks on track layout
+                y=alt.Y(
+                    'GraphPosition:Q', 
+                    scale=alt.Scale(domain=[1, 33]), 
+                    title="Track Position Rank", 
+                    axis=alt.Axis(
+                        grid=True, 
+                        domain=True, 
+                        tickCount=7, 
+                        labels=False, 
+                        ticks=False
+                    )
+                ),
                 color=alt.Color('Driver:N', legend=alt.Legend(orient='bottom', direction='vertical', titleColor='black', labelColor='black'))
             )
             
-            lines_multi = base_multi.mark_line().encode()
-            points_multi = base_multi.mark_circle(size=50)
+            lines_multi = base_multi.mark_line(strokeWidth=2.5).encode()
+            points_multi = base_multi.mark_circle(size=55)
             labels_multi = base_multi.mark_text(align='left', dx=6, dy=-6, fontStyle='bold', fontSize=10, color='black').encode(text='RawDisplay:N')
             
-            chart_render_multi = (lines_multi + points_multi + labels_multi).properties(height=380, background='white').configure_axis(
+            # Explicit height padding block ensures web view keeps full shape scope
+            chart_render_multi = (lines_multi + points_multi + labels_multi).properties(
+                height=520, 
+                background='white'
+            ).configure_axis(
                 labelColor='black', titleColor='black'
             )
             st.altair_chart(chart_render_multi, use_container_width=True)
