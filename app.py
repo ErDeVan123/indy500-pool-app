@@ -36,33 +36,40 @@ st.markdown("""
     /* 2. COMPLETELY RESET SEGMENTED CONTROL WRAPPERS TO PREVENT SYSTEM BLACKOUTS */
     div[data-testid="stSegmentedControl"] {
         background-color: #f1f1f1 !important;
-        padding: 4px;
+        padding: 6px;
         border-radius: 8px;
     }
 
-    /* --- UNUSED / UNSELECTED TABS --- */
+    /* --- DEEP INJECTION FOR UNSELECTED TABS (KILL MOBILE BLACKOUT) --- */
+    div[data-testid="stSegmentedControl"] button,
+    div[data-testid="stSegmentedControl"] [data-baseweb="button"],
     div[data-testid="stSegmentedControl"] button[aria-checked="false"] {
-        background-color: #ffffff !important; /* Force pristine white background */
+        background-color: #ffffff !important;
+        background: #ffffff !important;
         border: 2px solid #d3d3d3 !important;
+        color: #ff0000 !important;
     }
-    /* Drill deep down into Streamlit text and paragraph nodes to destroy native mobile blackouts */
+
+    /* Absolute force text strings and span tags out of black state */
     div[data-testid="stSegmentedControl"] button[aria-checked="false"] p,
     div[data-testid="stSegmentedControl"] button[aria-checked="false"] span,
-    div[data-testid="stSegmentedControl"] button[aria-checked="false"] label {
-        color: #ff0000 !important; /* Sharp Red Text */
-        -webkit-text-fill-color: #ff0000 !important; /* Force kill system dark-mode typography fills */
-        font-weight: 500 !important;
+    div[data-testid="stSegmentedControl"] button[aria-checked="false"] label,
+    div[data-testid="stSegmentedControl"] button div {
+        color: #ff0000 !important;
+        -webkit-text-fill-color: #ff0000 !important;
+        font-weight: 600 !important;
     }
 
     /* --- SELECTED TABS --- */
     div[data-testid="stSegmentedControl"] button[aria-checked="true"] {
-        background-color: #ff0000 !important; /* Bright Red container for unmistakable contrast */
+        background-color: #ff0000 !important;
+        background: #ff0000 !important;
         border: 2px solid #cc0000 !important;
     }
     div[data-testid="stSegmentedControl"] button[aria-checked="true"] p,
     div[data-testid="stSegmentedControl"] button[aria-checked="true"] span,
     div[data-testid="stSegmentedControl"] button[aria-checked="true"] label {
-        color: #ffffff !important; /* Bold White text over Red background */
+        color: #ffffff !important;
         -webkit-text-fill-color: #ffffff !important;
         font-weight: bold !important;
     }
@@ -143,7 +150,7 @@ def get_base_drivers():
             "Meyer Shank Racing", "Andretti Global", "Arrow McLaren", "Andretti Global", "Arrow McLaren", 
             "Rahal Letterman", "Arrow McLaren", "Team Penske", "Dale Coyne Racing", "Andretti Global", 
             "HMD Motorsports", "Rahal Letterman", "Rahal Letterman", "Dale Coyne Racing", "Abel Motorsports", 
-            "Juncos Hollinger", "A.J. Foyt Racing", "Dreyer & Reinbold"
+            "Juncos Hollinger", "A.F. Foyt Racing", "Dreyer & Reinbold"
         ],
         "Qual_Speed": [
             "234.214 mph", "233.811 mph", "233.504 mph", "233.210 mph", "233.114 mph", 
