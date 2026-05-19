@@ -33,7 +33,7 @@ st.markdown("""
     [data-testid="stHorizontalBlock"] {
         align-items: center !important;
     }
-    /* Target the standings dataframe to center specific numeric columns */
+    /* Target the standings dataframe to center columns */
     [data-testid="stDataFrame"] div[data-testid="stTable"] th,
     [data-testid="stDataFrame"] div[data-testid="stTable"] td {
         text-align: center !important;
@@ -150,7 +150,7 @@ def calculate_master_standings():
 
         leaderboard_data.append({
             "Name": row['Participant'],
-            "Starting Pts": int(score_start), # Fixed column label directly here
+            "Starting Pts": int(score_start),
             "100L Pts": int(score_100),
             "150L Pts": int(score_150),
             "Final Pts": int(score_final)
@@ -202,6 +202,42 @@ if selected_tab == "🏆 Standings":
     else:
         master_df = calculate_master_standings()
         
+        # --- NEW: COMBINED PARTICIPANTS STANDINGS TRACKING CHART ---
+        st.subheader("Pool Field Performance Tracker")
+        total_participants = len(master_df)
+        standings_milestones = ["Start", "Lap 100", "Lap 150", "Finish"]
+        
+        field_chart_records = []
+        for _, p_row in master_df.iterrows():
+            places = [p_row['Start Place'], p_row['100L Place'], p_row['150L Place'], p_row['Final Place']]
+            for m_lbl, place_val in zip(standings_milestones, places):
+                # Clean skip data markers if a given segment timeline hasn't finished yet
+                if m_lbl == "Start" or place_val != 0:
+                    graph_coord = (total_participants + 1) - place_val
+                    field_chart_records.append({
+                        "Milestone": m_lbl,
+                        "GraphPosition": graph_coord,
+                        "RawDisplay": f"#{place_val}",
+                        "Participant": p_row['Name']
+                    })
+                    
+        if field_chart_records:
+            field_chart_df = pd.DataFrame(field_chart_records)
+            
+            base_field = alt.Chart(field_chart_df).encode(
+                x=alt.X('Milestone:N', sort=standings_milestones, title="Race Milestone", axis=alt.Axis(grid=True, domain=True)),
+                y=alt.Y('GraphPosition:Q', scale=alt.Scale(domain=[1, total_participants]), title="Pool Standing Rank (Top is 1st)", axis=alt.Axis(labels=False, ticks=False, grid=True, domain=True)),
+                color='Participant:N'
+            )
+            
+            lines_field = base_field.mark_line(strokeWidth=3).encode()
+            points_field = base_field.mark_circle(size=60)
+            labels_field = base_field.mark_text(align='left', dx=7, dy=-7, fontStyle='bold', fontSize=11).encode(text='RawDisplay:N')
+            
+            st.altair_chart((lines_field + points_field + labels_field).properties(height=300), use_container_width=True)
+            st.caption("ℹ️ Higher lines indicate superior pool standings. Ranks update live as milestone track coordinates change.")
+            st.write("---")
+
         # Format layout ordering and sorting
         column_order = [
             "Final Place", "100L Place", "150L Place", "Name", 
