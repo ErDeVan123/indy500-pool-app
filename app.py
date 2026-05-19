@@ -6,15 +6,17 @@ import os
 # Page layout setup
 st.set_page_config(page_title="Indy 500 Pool Engine", layout="centered")
 
-# Custom Styling
+# Custom Styling: Overriding native mobile dark-mode layers for absolute contrast
 st.markdown("""
     <style>
+    /* 1. FORCE THE APP ROOT VARIABLES TO LIGHT STATE FOR MOBILE SYSTEM OVERRIDES */
     :root, [data-theme="light"], [data-theme="dark"] {
         --text-color: #000000 !important;
         --background-color: #ffffff !important;
         --primary-color: #ff0000 !important;
     }
 
+    /* Set a clean, responsive checkered flag background pattern */
     .stApp {
         background-image: linear-gradient(45deg, rgba(200,200,200,0.15) 25%, transparent 25%), 
                           linear-gradient(-45deg, rgba(200,200,200,0.15) 25%, transparent 25%), 
@@ -25,11 +27,14 @@ st.markdown("""
         background-color: #ffffff !important;
     }
     
+    /* Target regular body text safely across mobile webkit engines */
     .stApp h1, .stApp h2, .stApp h3, .stApp p, .stApp label, .stApp small, .stMarkdown p {
         color: #000000 !important;
         -webkit-text-fill-color: #000000 !important;
     }
 
+    /* --- NATIVE ST.TABS STYLING OVERRIDES --- */
+    /* Target the overall tab container bar */
     div[data-testid="stTabs"] {
         background-color: #f1f1f1 !important;
         padding: 4px 4px 0px 4px;
@@ -37,6 +42,7 @@ st.markdown("""
         border-bottom: 2px solid #ff0000 !important;
     }
 
+    /* Base styling for ALL tabs (unselected state) */
     div[data-testid="stTabs"] button {
         background-color: #e0e0e0 !important;
         color: #333333 !important;
@@ -48,12 +54,14 @@ st.markdown("""
         font-weight: 600 !important;
     }
 
+    /* High-intensity override to guarantee unselected text color visibility */
     div[data-testid="stTabs"] button p,
     div[data-testid="stTabs"] button span {
         color: #333333 !important;
         -webkit-text-fill-color: #333333 !important;
     }
 
+    /* Active/Selected Tab styling (Stays Red background with White text) */
     div[data-testid="stTabs"] button[aria-selected="true"] {
         background-color: #ff0000 !important;
         background: #ff0000 !important;
@@ -69,18 +77,21 @@ st.markdown("""
         font-weight: bold !important;
     }
     
+    /* Target images inside columns to center vertically and fit horizontally */
     [data-testid="stImage"] img {
+        height: 100px !important;
         object-fit: contain !important;
         border-radius: 4px;
         display: block;
         margin-left: auto;
         margin-right: auto;
     }
-    
+    /* Ensure the column layout visually balances the text height and centers content */
     [data-testid="stHorizontalBlock"] {
         align-items: center !important;
     }
     
+    /* HORIZONTAL SCROLL FOR WIDE GRAPHS */
     .scroll-container {
         width: 100%;
         overflow-x: auto;
@@ -92,6 +103,7 @@ st.markdown("""
         margin-bottom: 15px;
     }
     
+    /* MOBILE TEXT & WHITE BACKGROUND FIX FOR DATAFRAMES */
     [data-testid="stDataFrame"] {
         width: 100% !important;
         overflow-x: auto;
@@ -109,6 +121,7 @@ st.markdown("""
         font-size: 13px !important;     
         padding: 4px 6px !important;    
     }
+    /* Force left alignment specifically for the Participant Name column cells */
     [data-testid="stDataFrame"] div[data-testid="stTable"] td:nth-child(2),
     [data-testid="stDataFrame"] div[data-testid="stTable"] th:nth-child(2) {
         text-align: left !important;
@@ -118,7 +131,7 @@ st.markdown("""
 
 st.title("🏎️ Indy 500: VanGutz Style")
 
-# 1. Base Data with Updated Alex Palou Headshot Link
+# 1. Base Starting Grid Data
 @st.cache_data
 def get_base_drivers():
     data = {
@@ -154,79 +167,45 @@ def get_base_drivers():
         "Tier_1_3": [
             "Yes","Yes","Yes","Yes","Yes","Yes","Yes","Yes","Yes","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No"
         ],
-        "Driver_Pic": [
-            "https://www.indycar.com/-/media/IndyCar/Drivers/Headshots/2025/Alex-Palou.png",  # Updated with official image file path
-            "https://via.placeholder.com/150",
-            "https://via.placeholder.com/150",
-            "https://via.placeholder.com/150",
-            "https://via.placeholder.com/150",
-            "https://via.placeholder.com/150",
-            "https://via.placeholder.com/150",
-            "https://via.placeholder.com/150",
-            "https://via.placeholder.com/150",
-            "https://via.placeholder.com/150",
-            "https://via.placeholder.com/150",
-            "https://via.placeholder.com/150",
-            "https://via.placeholder.com/150",
-            "https://via.placeholder.com/150",
-            "https://via.placeholder.com/150",
-            "https://via.placeholder.com/150",
-            "https://via.placeholder.com/150",
-            "https://via.placeholder.com/150",
-            "https://via.placeholder.com/150",
-            "https://via.placeholder.com/150",
-            "https://via.placeholder.com/150",
-            "https://via.placeholder.com/150",
-            "https://via.placeholder.com/150",
-            "https://via.placeholder.com/150",
-            "https://via.placeholder.com/150",
-            "https://via.placeholder.com/150",
-            "https://via.placeholder.com/150",
-            "https://via.placeholder.com/150",
-            "https://via.placeholder.com/150",
-            "https://via.placeholder.com/150",
-            "https://via.placeholder.com/150",
-            "https://via.placeholder.com/150",
-            "https://via.placeholder.com/150"
-        ],
         "Car_Pic": [
-            "https://via.placeholder.com/300x100", 
-            "https://via.placeholder.com/300x100",
-            "https://via.placeholder.com/300x100", 
-            "https://via.placeholder.com/300x100",
-            "https://via.placeholder.com/300x100", 
-            "https://via.placeholder.com/300x100",
-            "https://via.placeholder.com/300x100", 
-            "https://via.placeholder.com/300x100",
-            "https://via.placeholder.com/300x100", 
-            "https://via.placeholder.com/300x100",
-            "https://via.placeholder.com/300x100", 
-            "https://via.placeholder.com/300x100",
-            "https://via.placeholder.com/300x100", 
-            "https://via.placeholder.com/300x100",
-            "https://via.placeholder.com/300x100", 
-            "https://via.placeholder.com/300x100",
-            "https://via.placeholder.com/300x100", 
-            "https://via.placeholder.com/300x100",
-            "https://via.placeholder.com/300x100", 
-            "https://via.placeholder.com/300x100",
-            "https://via.placeholder.com/300x100", 
-            "https://via.placeholder.com/300x100",
-            "https://via.placeholder.com/300x100",  
-            "https://via.placeholder.com/300x100",
-            "https://via.placeholder.com/300x100", 
-            "https://via.placeholder.com/300x100",
-            "https://via.placeholder.com/300x100", 
-            "https://via.placeholder.com/300x100",
-            "https://via.placeholder.com/300x100", 
-            "https://via.placeholder.com/300x100",
-            "https://via.placeholder.com/300x100", 
-            "https://via.placeholder.com/300x100",
-            "https://via.placeholder.com/300x100"
+            "https://www.indycar.com/-/media/IndyCar/Cars/2026/IndyCar-Series/Liveries/Indy500/10-DHL-SS.png?dp=05-11-2026T06:02PM", 
+            "https://www.indycar.com/-/media/IndyCar/Cars/2026/IndyCar-Series/Liveries/Indy500/20-JavaHouse-SS.png?dp=05-11-2026T06:03PM",
+            "https://www.indycar.com/-/media/IndyCar/Cars/2026/IndyCar-Series/Liveries/Indy500/12-Verizon-SS.png?dp=05-11-2026T06:02PM", 
+            "https://www.indycar.com/-/media/IndyCar/Cars/2026/IndyCar-Series/Liveries/Indy500/60-SiriusXM-MorganWallen-SS.png?dp=05-11-2026T06:05PM",
+            "https://www.indycar.com/-/media/IndyCar/Cars/2026/IndyCar-Series/Liveries/Indy500/14-HFOT-SS.png?dp=05-11-2026T06:03PM", 
+            "https://www.indycar.com/-/media/IndyCar/Cars/2026/IndyCar-Series/Liveries/Indy500/5-Arrow-SS.png?dp=05-15-2026T08:23PM",
+            "https://www.indycar.com/-/media/IndyCar/Cars/2026/IndyCar-Series/Liveries/Indy500/8-Sunoco-SS.png?dp=05-11-2026T06:02PM", 
+            "https://www.indycar.com/-/media/IndyCar/Cars/2026/IndyCar-Series/Liveries/Indy500/23-Kingspan-SS.png?dp=05-11-2026T06:03PM",
+            "https://www.indycar.com/-/media/IndyCar/Cars/2026/IndyCar-Series/Liveries/Indy500/3-Pennzoil-SS.png?dp=05-11-2026T06:01PM", 
+            "https://www.indycar.com/-/media/IndyCar/Cars/2026/IndyCar-Series/Liveries/Indy500/9-PNCBank-SS.png?dp=05-11-2026T06:02PM",
+            "https://www.indycar.com/-/media/IndyCar/Cars/2026/IndyCar-Series/Liveries/Indy500/76-Wedbush-SS.png?dp=05-11-2026T06:05PM", 
+            "https://www.indycar.com/-/media/IndyCar/Cars/2026/IndyCar-Series/Liveries/Indy500/75-Amada-SS.png?dp=05-11-2026T06:05PM",
+            "https://www.indycar.com/-/media/IndyCar/Cars/2026/IndyCar-Series/Liveries/Indy500/33-Slimfast-SS.png?dp=05-10-2026T01:02AM", 
+            "https://www.indycar.com/-/media/IndyCar/Cars/2026/IndyCar-Series/Liveries/Indy500/06-Cliffs-SS.png?dp=05-10-2026T01:02AM",
+            "https://www.indycar.com/-/media/IndyCar/Cars/2026/IndyCar-Series/Liveries/Indy500/21-Splenda-SS.png?dp=05-11-2026T06:03PM", 
+            "https://www.indycar.com/-/media/IndyCar/Cars/2026/IndyCar-Series/Liveries/Indy500/66-ACURA-SS.png?dp=05-11-2026T06:05PM",
+            "https://www.indycar.com/-/media/IndyCar/Cars/2026/IndyCar-Series/Liveries/Indy500/28-Phoenix-SS.png?dp=05-11-2026T06:04PM", 
+            "https://www.indycar.com/-/media/IndyCar/Cars/2026/IndyCar-Series/Liveries/Indy500/7-Velo-SS.png?dp=05-11-2026T06:02PM",
+            "https://www.indycar.com/-/media/IndyCar/Cars/2026/IndyCar-Series/Liveries/Indy500/26-TWGAI-SS.png?dp=05-11-2026T06:03PM", 
+            "https://www.indycar.com/-/media/IndyCar/Cars/2026/IndyCar-Series/Liveries/Indy500/6-NTTDATA-SS.png?dp=05-15-2026T03:15PM",
+            "https://www.indycar.com/-/media/IndyCar/Cars/2026/IndyCar-Series/Liveries/Indy500/45-Droplight-SS.png?dp=05-11-2026T06:04PM", 
+            "https://www.indycar.com/-/media/IndyCar/Cars/2026/IndyCar-Series/Liveries/Indy500/31-PrizePicks-SS.png?dp=05-11-2026T06:04PM",
+            "https://www.indycar.com/-/media/IndyCar/Cars/2026/IndyCar-Series/Liveries/Indy500/2-Shell-SS.png?dp=05-11-2026T06:01PM",  
+            "https://www.indycar.com/-/media/IndyCar/Cars/2026/IndyCar-Series/Liveries/Indy500/18-BMAX-SS.png?dp=05-11-2026T10:01PM",
+            "https://www.indycar.com/-/media/IndyCar/Cars/2026/IndyCar-Series/Liveries/Indy500/27-SamsClub-SS.png?dp=05-11-2026T06:04PM", 
+            "https://www.indycar.com/-/media/IndyCar/Cars/2026/IndyCar-Series/Liveries/Indy500/11-elf-SS.png?dp=05-10-2026T01:02AM",
+            "https://www.indycar.com/-/media/IndyCar/Cars/2026/IndyCar-Series/Liveries/Indy500/47-ENVE-SS.png?dp=05-11-2026T06:04PM", 
+            "https://www.indycar.com/-/media/IndyCar/Cars/2026/IndyCar-Series/Liveries/Indy500/15-UnitedRentals-SS.png?dp=05-11-2026T07:42PM",
+            "https://www.indycar.com/-/media/IndyCar/Cars/2026/IndyCar-Series/Liveries/Indy500/19-Nammo-SS.png?dp=05-11-2026T07:42PM", 
+            "https://www.indycar.com/-/media/IndyCar/Cars/2026/IndyCar-Series/Liveries/Indy500/51-TexasRoadhouse-SS.png?dp=05-15-2026T02:06PM",
+            "https://www.indycar.com/-/media/IndyCar/Cars/2026/IndyCar-Series/Liveries/Indy500/77-Goodheart-SS.png?dp=05-11-2026T06:05PM", 
+            "https://www.indycar.com/-/media/IndyCar/Cars/2026/IndyCar-Series/Liveries/Indy500/4-Combitrans-SS.png?dp=05-11-2026T06:01PM",
+            "https://www.indycar.com/-/media/IndyCar/Cars/2026/IndyCar-Series/Liveries/Indy500/24-INVST-SS.png?dp=05-11-2026T06:03PM"
         ]
     }
     return pd.DataFrame(data)
 
+# 2. Sync Race Positions Database
 POSITIONS_FILE = "race_positions.csv"
 def load_race_positions():
     base_df = get_base_drivers()
@@ -242,6 +221,7 @@ def load_race_positions():
 
 df = load_race_positions()
 
+# 3. Synchronize Participant CSV Database
 PICK_FILE = "picks.csv"
 def load_picks():
     if os.path.exists(PICK_FILE):
@@ -250,6 +230,7 @@ def load_picks():
 
 picks_df = load_picks()
 
+# Helper function to generate current standings calculations
 def calculate_master_standings():
     if picks_df.empty:
         return pd.DataFrame()
@@ -273,6 +254,7 @@ def calculate_master_standings():
         })
         
     master_df = pd.DataFrame(leaderboard_data)
+    
     master_df = master_df.sort_values(by="Starting Pts", ascending=True)
     master_df["Start Place"] = range(1, len(master_df) + 1)
     
@@ -296,12 +278,14 @@ def calculate_master_standings():
         
     return master_df
 
+# 4. Navigation Layout rearranged based on preference
 tab_names = ["📝 Draft Drivers", "📋 View Rosters", "📊 Popular Picks", "🏁 Milestone Ranks", "🏆 Standings"]
 t2, t4, t5, t3, t1 = st.tabs(tab_names)
 
-# --- VIEW 2: DRAFT BOARD ---
+# --- VIEW 2: HARD-VALIDATED DRAFT BOARD (Now 1st) ---
 with t2:
     st.markdown("Select exactly **8 drivers**. Maximum **3 from Rows 1-3**.")
+    
     entry_name = st.text_input("Enter Roster Submission Name:", key="new_user_name", placeholder="e.g., Sarah - Lineup 1").strip()
     
     if "selected_pool" not in st.session_state:
@@ -314,7 +298,7 @@ with t2:
         is_selected = d_name in st.session_state["selected_pool"]
         
         with st.container(border=True):
-            col1, col2, col3, col4 = st.columns([1.2, 2.5, 1.2, 3.5])
+            col1, col2, col3 = st.columns([1.2, 2.8, 4.0])
             with col1:
                 st.write(f"**Start Pos: {row['Starting_Pos']}**")
                 st.caption(f"⏱️ {row['Qual_Speed']}")
@@ -334,11 +318,10 @@ with t2:
                         st.session_state["selected_pool"].remove(d_name)
                         st.rerun()
             with col3:
-                st.image(row['Driver_Pic'], width=85)
-            with col4:
                 st.image(row['Car_Pic'])
 
     st.write("---")
+    
     current_picks = st.session_state["selected_pool"]
     count_picked = len(current_picks)
     count_tier = df[df['Driver'].isin(current_picks) & (df['Tier_1_3'] == 'Yes')].shape[0]
@@ -349,16 +332,16 @@ with t2:
     
     can_submit = True
     if count_picked != 8:
-        st.error(f"⚠️ Blocked: Lineup must contain exactly 8 choices.")
+        st.error(f"⚠️ Blocked: Lineup must contain exactly 8 choices. You currently have {count_picked} selected.")
         can_submit = False
     if count_tier > 3:
-        st.error(f"⚠️ Blocked: Maximum tier allowance exceeded.")
+        st.error(f"⚠️ Blocked: You have selected {count_tier} drivers from Rows 1-3. The absolute tier limit is 3.")
         can_submit = False
     if not entry_name:
         st.warning("Please input a distinct Submission Name above to activate the lock-in button.")
         can_submit = False
     elif entry_name in picks_df['Participant'].values:
-        st.error(f"⚠️ Blocked: A lineup entry named '{entry_name}' has already been submitted.")
+        st.error(f"⚠️ Blocked: A lineup entry named '{entry_name}' has already been submitted. Use a new modifier label.")
         can_submit = False
 
     if st.button("Submit Official Roster Lineup", type="primary", disabled=not can_submit):
@@ -369,10 +352,11 @@ with t2:
         }])
         updated_df = pd.concat([picks_df, new_entry], ignore_index=True)
         updated_df.to_csv(PICK_FILE, index=False)
+        
         st.session_state["selected_pool"] = []
         st.rerun()
 
-# --- VIEW 4: ROSTER VIEW ---
+# --- VIEW 4: ROSTER VIEW (Now 2nd) ---
 with t4:
     if picks_df.empty:
         st.info("No active rosters submitted.")
@@ -382,7 +366,12 @@ with t4:
         u_picks = [u_row['P1'], u_row['P2'], u_row['P3'], u_row['P4'], u_row['P5'], u_row['P6'], u_row['P7'], u_row['P8']]
         
         race_is_finished = df["Pos_Final"].sum() == 561
-        sort_basis = "Pos_Final" if race_is_finished else ("Pos_150" if df["Pos_150"].sum() == 561 else ("Pos_100" if df["Pos_100"].sum() == 561 else "Starting_Pos"))
+        
+        if race_is_finished:
+            sort_basis = "Pos_Final"
+        else:
+            sort_basis = "Pos_150" if df["Pos_150"].sum() == 561 else ("Pos_100" if df["Pos_100"].sum() == 561 else "Starting_Pos")
+            
         u_df = df[df['Driver'].isin(u_picks)].sort_values(by=sort_basis)
         
         st.subheader(f"{user}'s Quest for Milk Drinking Immortality")
@@ -391,26 +380,40 @@ with t4:
         if not master_standings.empty:
             p_history = master_standings[master_standings['Name'] == user].iloc[0]
             total_participants = len(master_standings)
+            
             standings_milestones = ["Start", "Lap 100", "Lap 150", "Finish"]
             standings_places = [p_history['Start Place'], p_history['100L Place'], p_history['150L Place'], p_history['Final Place']]
             
             pool_chart_records = []
             for m_lbl, place_val in zip(standings_milestones, standings_places):
                 if m_lbl == "Start" or place_val != 0:
-                    pool_chart_records.append({"Milestone": m_lbl, "GraphPosition": (total_participants + 1) - place_val, "RawDisplay": f"#{place_val}"})
+                    graph_coord = (total_participants + 1) - place_val
+                    pool_chart_records.append({
+                        "Milestone": m_lbl,
+                        "GraphPosition": graph_coord,
+                        "RawDisplay": f"#{place_val}"
+                    })
             
             if len(pool_chart_records) > 1:
-                chart_render_pool = alt.Chart(pd.DataFrame(pool_chart_records)).encode(
-                    x=alt.X('Milestone:N', sort=standings_milestones, title="Race Milestone"),
-                    y=alt.Y('GraphPosition:Q', scale=alt.Scale(domain=[1, total_participants]), title="Rank", axis=alt.Axis(labels=False, ticks=False))
-                ).mark_line(color="#1f77b4", strokeWidth=3) + alt.Chart(pd.DataFrame(pool_chart_records)).encode(
-                    x=alt.X('Milestone:N', sort=standings_milestones), y=alt.Y('GraphPosition:Q')
-                ).mark_circle(size=70, color="#1f77b4") + alt.Chart(pd.DataFrame(pool_chart_records)).encode(
-                    x=alt.X('Milestone:N', sort=standings_milestones), y=alt.Y('GraphPosition:Q'), text='RawDisplay:N'
-                ).mark_text(align='left', dx=8, dy=-8, fontStyle='bold', fontSize=12, color='black')
-                st.altair_chart(chart_render_pool.properties(height=160, background='white'), use_container_width=True)
+                pool_chart_df = pd.DataFrame(pool_chart_records)
+                
+                base_pool = alt.Chart(pool_chart_df).encode(
+                    x=alt.X('Milestone:N', sort=standings_milestones, title="Race Milestone", axis=alt.Axis(grid=True, domain=True)),
+                    y=alt.Y('GraphPosition:Q', scale=alt.Scale(domain=[1, total_participants]), title="Rank", axis=alt.Axis(labels=False, ticks=False, grid=True, domain=True))
+                )
+                
+                lines_pool = base_pool.mark_line(color="#1f77b4", strokeWidth=3).encode()
+                points_pool = base_pool.mark_circle(size=70, color="#1f77b4")
+                labels_pool = base_pool.mark_text(align='left', dx=8, dy=-8, fontStyle='bold', fontSize=12, color='black').encode(text='RawDisplay:N')
+                
+                chart_render_pool = (lines_pool + points_pool + labels_pool).properties(height=160, background='white').configure_axis(
+                    labelColor='black', titleColor='black'
+                )
+                st.altair_chart(chart_render_pool, use_container_width=True)
+                st.caption("ℹ️ Upward trending lines mean you are climbing towards 1st place.")
         
         st.write("---")
+        
         st.subheader("Driver lineup progression")
         chart_records = []
         milestones = ["Start", "Lap 100", "Lap 150", "Finish"]
@@ -419,43 +422,65 @@ with t4:
             points = [row['Starting_Pos'], row['Pos_100'], row['Pos_150'], row['Pos_Final']]
             for m_label, pt in zip(milestones, points):
                 if m_label == "Start" or pt != 0:
-                    chart_records.append({"Milestone": m_label, "GraphPosition": 34 - pt, "RawDisplay": f"P{pt}", "Driver": f"{row['Driver']} (# {row['Car_Num']})"})
+                    chart_records.append({
+                        "Milestone": m_label,
+                        "GraphPosition": 34 - pt,
+                        "RawDisplay": f"P{pt}",
+                        "Driver": f"{row['Driver']} (# {row['Car_Num']})"
+                    })
                     
         if chart_records:
-            chart_render_multi = alt.Chart(pd.DataFrame(chart_records)).encode(
-                x=alt.X('Milestone:N', sort=milestones, title="Race Milestone"),
-                y=alt.Y('GraphPosition:Q', scale=alt.Scale(domain=[1, 33]), title="Rank", axis=alt.Axis(labels=False, ticks=False)),
-                color=alt.Color('Driver:N', legend=alt.Legend(orient='bottom', direction='vertical'))
-            ).mark_line(strokeWidth=2.5) + alt.Chart(pd.DataFrame(chart_records)).encode(
-                x=alt.X('Milestone:N', sort=milestones), y=alt.Y('GraphPosition:Q'), color='Driver:N'
-            ).mark_circle(size=55) + alt.Chart(pd.DataFrame(chart_records)).encode(
-                x=alt.X('Milestone:N', sort=milestones), y=alt.Y('GraphPosition:Q'), color='Driver:N', text='RawDisplay:N'
-            ).mark_text(align='left', dx=6, dy=-6, fontStyle='bold', fontSize=10, color='black')
-            st.altair_chart(chart_render_multi.properties(height=520, background='white'), use_container_width=True)
+            chart_df = pd.DataFrame(chart_records)
+            
+            base_multi = alt.Chart(chart_df).encode(
+                x=alt.X('Milestone:N', sort=milestones, title="Race Milestone", axis=alt.Axis(grid=True, domain=True)),
+                y=alt.Y(
+                    'GraphPosition:Q', 
+                    scale=alt.Scale(domain=[1, 33]), 
+                    title="Rank", 
+                    axis=alt.Axis(grid=True, domain=True, tickCount=7, labels=False, ticks=False)
+                ),
+                color=alt.Color('Driver:N', legend=alt.Legend(orient='bottom', direction='vertical', titleColor='black', labelColor='black'))
+            )
+            
+            lines_multi = base_multi.mark_line(strokeWidth=2.5).encode()
+            points_multi = base_multi.mark_circle(size=55)
+            labels_multi = base_multi.mark_text(align='left', dx=6, dy=-6, fontStyle='bold', fontSize=10, color='black').encode(text='RawDisplay:N')
+            
+            chart_render_multi = (lines_multi + points_multi + labels_multi).properties(height=520, background='white').configure_axis(
+                labelColor='black', titleColor='black'
+            )
+            st.altair_chart(chart_render_multi, use_container_width=True)
             
         st.write("---")
         
         for _, row in u_df.iterrows():
             with st.container(border=True):
-                col1, col2, col3 = st.columns([3.5, 1.2, 3.3])
+                col1, col2 = st.columns([4.0, 4.0])
                 with col1:
                     st.subheader(row['Driver'])
                     st.caption(f"#{row['Car_Num']} | {row['Team']}")
                     st.caption(f"Start: P{row['Starting_Pos']} | Lap 100: P{row['Pos_100']} | Lap 150: P{row['Pos_150']} | Finish: P{row['Pos_Final']}")
+                    
                     if race_is_finished:
                         pos_differential = int(row['Starting_Pos']) - int(row['Pos_Final'])
-                        st.markdown(f"📈 **Gained {pos_differential} places**" if pos_differential > 0 else (f"📉 **Lost {abs(pos_differential)} places**" if pos_differential < 0 else "↔️ **Held position**"))
+                        if pos_differential > 0:
+                            st.markdown(f"📈 **Gained {pos_differential} places** during the race.")
+                        elif pos_differential < 0:
+                            st.markdown(f"📉 **Lost {abs(pos_differential)} places** during the race.")
+                        else:
+                            st.markdown("↔️ **Held position** exactly from grid position to checkered flag.")
+                            
                 with col2:
-                    st.image(row['Driver_Pic'], width=85)
-                with col3:
                     st.image(row['Car_Pic'])
 
-# --- VIEW 5: POPULAR PICKS ---
+# --- VIEW 5: POPULAR PICKS METRICS (Now 3rd & Redesigned) ---
 with t5:
     st.header("Who drafted who?")
     if picks_df.empty:
         st.info("No picks drafted yet.")
     else:
+        # Build counting hashmap
         driver_pick_map = {driver: [] for driver in df['Driver'].tolist()}
         for _, row in picks_df.iterrows():
             p_name = row['Participant']
@@ -463,8 +488,11 @@ with t5:
                 if p in driver_pick_map:
                     driver_pick_map[p].append(p_name)
                     
+        # Match count values directly to master dataframe structure
         df_sorted = df.copy()
         df_sorted['Pick_Count'] = df_sorted['Driver'].map(lambda x: len(driver_pick_map[x]))
+        
+        # Priority 1: Most frequently picked. Priority 2: Standard track order fallback sync.
         df_sorted = df_sorted.sort_values(by=["Pick_Count", "Starting_Pos"], ascending=[False, True])
                         
         for _, row in df_sorted.iterrows():
@@ -472,20 +500,20 @@ with t5:
             choosing_p = driver_pick_map[d_name]
             
             with st.container(border=True):
-                head_col1, head_col2 = st.columns([4.0, 1.0])
-                with head_col1:
-                    st.subheader(d_name)
-                    st.caption(f"Car #{row['Car_Num']} | Start: P{row['Starting_Pos']} | Total Drafts: {len(choosing_p)}")
-                with head_col2:
-                    st.image(row['Driver_Pic'], width=75)
+                # Layout reordered down a unified vertical card profile
+                st.subheader(d_name)
+                st.caption(f"Car #{row['Car_Num']} | Start: P{row['Starting_Pos']} | Total Drafts: {len(choosing_p)}")
                 
+                # Element 1: Image immediately beneath headers
                 st.image(row['Car_Pic'])
                 
+                # Element 2: Draft tracking strings
                 if choosing_p:
                     st.markdown(f"**Drafted By:** {', '.join(choosing_p)}")
                 else:
                     st.markdown("*Nobody has drafted this driver yet.*")
                     
+                # Element 3: Graphical progression tracker at the bottom of the card block
                 m_labels = ["Start", "Lap 100", "Lap 150", "Finish"]
                 m_vals = [row['Starting_Pos'], row['Pos_100'], row['Pos_150'], row['Pos_Final']]
                 
@@ -495,23 +523,44 @@ with t5:
                         driver_history.append({"Milestone": lbl, "GraphPosition": 34 - val, "RawDisplay": f"P{val}"})
                         
                 if len(driver_history) > 1:
-                    chart_render_pop = alt.Chart(pd.DataFrame(driver_history)).encode(
-                        x=alt.X('Milestone:N', sort=m_labels, title="Milestone"),
-                        y=alt.Y('GraphPosition:Q', scale=alt.Scale(domain=[1, 33]), title="Rank", axis=alt.Axis(labels=False, ticks=False))
-                    ).mark_line(color="#ff4b4b") + alt.Chart(pd.DataFrame(driver_history)).encode(
-                        x=alt.X('Milestone:N', sort=m_labels), y=alt.Y('GraphPosition:Q')
-                    ).mark_circle(size=60, color="#ff4b4b") + alt.Chart(pd.DataFrame(driver_history)).encode(
-                        x=alt.X('Milestone:N', sort=m_labels), y=alt.Y('GraphPosition:Q'), text='RawDisplay:N'
-                    ).mark_text(align='left', dx=7, dy=-7, fontStyle='bold', fontSize=11, color='black')
-                    st.altair_chart(chart_render_pop.properties(height=140, background='white'), use_container_width=True)
+                    single_driver_df = pd.DataFrame(driver_history)
+                    
+                    base_pop = alt.Chart(single_driver_df).encode(
+                        x=alt.X('Milestone:N', sort=m_labels, title="Milestone", axis=alt.Axis(grid=True, domain=True)),
+                        y=alt.Y('GraphPosition:Q', scale=alt.Scale(domain=[1, 33]), title="Rank", axis=alt.Axis(labels=False, ticks=False, grid=True, domain=True))
+                    )
+                    
+                    lines_pop = base_pop.mark_line(color="#ff4b4b").encode()
+                    points_pop = base_pop.mark_circle(size=60, color="#ff4b4b")
+                    labels_pop = base_pop.mark_text(align='left', dx=7, dy=-7, fontStyle='bold', fontSize=11, color='black').encode(text='RawDisplay:N')
+                    
+                    chart_render_pop = (lines_pop + points_pop + labels_pop).properties(height=140, background='white').configure_axis(
+                        labelColor='black', titleColor='black'
+                    )
+                    st.altair_chart(chart_render_pop, use_container_width=True)
 
-# --- VIEW 3: LIVE FIELD RUNNING ORDER ---
+# --- VIEW 3: LIVE FIELD RUNNING ORDER (Now 4th) ---
 with t3:
-    sort_basis_label = st.selectbox("Milestone to display:", options=["Starting Order", "Running Order @ Lap 100", "Running Order @ Lap 150", "Finishing Order"])
-    sort_by_col = "Pos_Final" if sort_basis_label == "Finishing Order" else ("Pos_150" if sort_basis_label == "Running Order @ Lap 150" else ("Pos_100" if sort_basis_label == "Running Order @ Lap 100" else "Starting_Pos"))
+    sort_basis_label = st.selectbox(
+        "Milestone to display:",
+        options=["Starting Order", "Running Order @ Lap 100", "Running Order @ Lap 150", "Finishing Order"]
+    )
+    
+    if sort_basis_label == "Running Order @ Lap 100":
+        sort_by_col = "Pos_100"
+        display_title = "Running Order @ Lap 100"
+    elif sort_basis_label == "Running Order @ Lap 150":
+        sort_by_col = "Pos_150"
+        display_title = "Running Order @ Lap 150"
+    elif sort_basis_label == "Finishing Order":
+        sort_by_col = "Pos_Final"
+        display_title = "Finishing Order"
+    else:
+        sort_by_col = "Starting_Pos"
+        display_title = "Starting Order"
 
     st.write("---")
-    st.subheader(sort_basis_label)
+    st.subheader(display_title)
     
     sorted_df = df.copy()
     if sort_by_col != "Starting_Pos":
@@ -524,52 +573,81 @@ with t3:
         with st.container(border=True):
             col1, col2 = st.columns([4.0, 4.0])
             with col1:
-                st.metric("Current Order", f"P{row[sort_by_col]}" if row[sort_by_col] != 0 else "--")
+                current_val = row[sort_by_col]
+                metric_label = f"P{current_val}" if current_val != 0 else "--"
+                st.metric("Current Order", metric_label)
                 st.subheader(row['Driver'])
                 st.caption(f"#{row['Car_Num']} | {row['Team']}")
                 
                 m_labels = ["Start", "Lap 100", "Lap 150", "Finish"]
                 m_vals = [row['Starting_Pos'], row['Pos_100'], row['Pos_150'], row['Pos_Final']]
-                driver_history = [{"Milestone": lbl, "GraphPosition": 34 - val, "RawDisplay": f"P{val}"} for lbl, val in zip(m_labels, m_vals) if lbl == "Start" or val != 0]
+                
+                driver_history = []
+                for lbl, val in zip(m_labels, m_vals):
+                    if lbl == "Start" or val != 0:
+                        driver_history.append({"Milestone": lbl, "GraphPosition": 34 - val, "RawDisplay": f"P{val}"})
                         
                 if len(driver_history) > 1:
-                    chart_render = alt.Chart(pd.DataFrame(driver_history)).encode(
-                        x=alt.X('Milestone:N', sort=m_labels, title="Milestone"),
-                        y=alt.Y('GraphPosition:Q', scale=alt.Scale(domain=[1, 33]), title="Rank", axis=alt.Axis(labels=False, ticks=False))
-                    ).mark_line(color="#ff4b4b") + alt.Chart(pd.DataFrame(driver_history)).encode(
-                        x=alt.X('Milestone:N', sort=m_labels), y=alt.Y('GraphPosition:Q')
-                    ).mark_circle(size=60, color="#ff4b4b") + alt.Chart(pd.DataFrame(driver_history)).encode(
-                        x=alt.X('Milestone:N', sort=m_labels), y=alt.Y('GraphPosition:Q'), text='RawDisplay:N'
-                    ).mark_text(align='left', dx=7, dy=-7, fontStyle='bold', fontSize=11, color='black')
-                    st.altair_chart(chart_render.properties(height=175, background='white'), use_container_width=True)
+                    single_driver_df = pd.DataFrame(driver_history)
+                    
+                    base = alt.Chart(single_driver_df).encode(
+                        x=alt.X('Milestone:N', sort=m_labels, title="Milestone", axis=alt.Axis(grid=True, domain=True)),
+                        y=alt.Y('GraphPosition:Q', scale=alt.Scale(domain=[1, 33]), title="Rank", axis=alt.Axis(labels=False, ticks=False, grid=True, domain=True))
+                    )
+                    
+                    lines = base.mark_line(color="#ff4b4b").encode()
+                    points = base.mark_circle(size=60, color="#ff4b4b")
+                    labels = base.mark_text(align='left', dx=7, dy=-7, fontStyle='bold', fontSize=11, color='black').encode(text='RawDisplay:N')
+                    
+                    chart_render = (lines + points + labels).properties(height=175, background='white').configure_axis(
+                        labelColor='black', titleColor='black'
+                    )
+                    st.altair_chart(chart_render, use_container_width=True)
             with col2:
                 st.image(row['Car_Pic'])
 
     st.write("---")
-    with st.expander("🛠️ Live Race Timing Tower Management"):
+    with st.expander("🛠️ Live Race Timing Tower Management (Input Milestone Positions Here)"):
+        st.markdown("Select placement ranks via the dropdown boxes. Uncompleted points map safely to `0`.")
+        
+        position_dropdown_choices = list(range(34))
+        
         updated_rows = []
         for idx, row in df.sort_values(by="Starting_Pos").iterrows():
             st.markdown(f"**#{row['Car_Num']} - {row['Driver']}**")
             box1, box2, box3, box4 = st.columns(4)
-            with box1: st.selectbox("Grid Start", options=[int(row['Starting_Pos'])], disabled=True, key=f"start_drop_{idx}")
-            with box2: p100_val = st.selectbox("Pos @ 100 Laps", options=list(range(34)), index=int(row['Pos_100']), key=f"p100_drop_{idx}")
-            with box3: p150_val = st.selectbox("Pos @ 150 Laps", options=list(range(34)), index=int(row['Pos_150']), key=f"p150_drop_{idx}")
-            with box4: pfin_val = st.selectbox("Finish Position", options=list(range(34)), index=int(row['Pos_Final']), key=f"pfin_drop_{idx}")
-            updated_rows.append({"Driver": row['Driver'], "Pos_100": p100_val, "Pos_150": p150_val, "Pos_Final": pfin_val})
+            
+            with box1:
+                st.selectbox("Grid Start", options=[int(row['Starting_Pos'])], disabled=True, key=f"start_drop_{idx}")
+            with box2:
+                p100_val = st.selectbox("Pos @ 100 Laps", options=position_dropdown_choices, index=int(row['Pos_100']), key=f"p100_drop_{idx}")
+            with box3:
+                p150_val = st.selectbox("Pos @ 150 Laps", options=position_dropdown_choices, index=int(row['Pos_150']), key=f"p150_drop_{idx}")
+            with box4:
+                pfin_val = st.selectbox("Finish Position", options=position_dropdown_choices, index=int(row['Pos_Final']), key=f"pfin_drop_{idx}")
+                
+            updated_rows.append({
+                "Driver": row['Driver'],
+                "Pos_100": p100_val,
+                "Pos_150": p150_val,
+                "Pos_Final": pfin_val
+            })
             st.write("---")
             
         if st.button("Save Race Positions", type="primary"):
-            pd.DataFrame(updated_rows).to_csv(POSITIONS_FILE, index=False)
+            save_df = pd.DataFrame(updated_rows)
+            save_df.to_csv(POSITIONS_FILE, index=False)
             st.success("Track intervals securely recorded!")
             st.rerun()
 
-# --- VIEW 1: OVERALL STANDINGS ---
+# --- VIEW 1: OVERALL STANDINGS (Now Last) ---
 with t1:
     st.header("Overall Standings")
     if picks_df.empty:
-        st.info("No pool sheets logged yet.")
+        st.info("No pool sheets logged yet. Select the 'Draft Drivers' tab above to add yours!")
     else:
         master_df = calculate_master_standings()
+        
         total_participants = len(master_df)
         standings_milestones = ["Start", "Lap 100", "Lap 150", "Finish"]
         
@@ -578,38 +656,75 @@ with t1:
             places = [p_row['Start Place'], p_row['100L Place'], p_row['150L Place'], p_row['Final Place']]
             for m_lbl, place_val in zip(standings_milestones, places):
                 if m_lbl == "Start" or place_val != 0:
-                    field_chart_records.append({"Milestone": m_lbl, "GraphPosition": (total_participants + 1) - place_val, "RawDisplay": f"#{place_val}", "Participant": p_row['Name']})
+                    graph_coord = (total_participants + 1) - place_val
+                    field_chart_records.append({
+                        "Milestone": m_lbl,
+                        "GraphPosition": graph_coord,
+                        "RawDisplay": f"#{place_val}",
+                        "Participant": p_row['Name']
+                    })
                     
         if field_chart_records:
-            chart_obj = alt.Chart(pd.DataFrame(field_chart_records)).encode(
-                x=alt.X('Milestone:N', sort=standings_milestones, title="Race Milestone", axis=alt.Axis(labelAngle=0)),
-                y=alt.Y('GraphPosition:Q', scale=alt.Scale(domain=[1, total_participants]), title="Rank", axis=alt.Axis(labels=False, ticks=False)),
-                color=alt.Color('Participant:N', legend=alt.Legend(orient='bottom', direction='vertical'))
-            ).mark_line(strokeWidth=3) + alt.Chart(pd.DataFrame(field_chart_records)).encode(
-                x=alt.X('Milestone:N', sort=standings_milestones), y=alt.Y('GraphPosition:Q'), color='Participant:N'
-            ).mark_circle(size=60) + alt.Chart(pd.DataFrame(field_chart_records)).encode(
-                x=alt.X('Milestone:N', sort=standings_milestones), y=alt.Y('GraphPosition:Q'), color='Participant:N', text='RawDisplay:N'
-            ).mark_text(align='left', dx=7, dy=-7, fontStyle='bold', fontSize=11, color='black')
+            field_chart_df = pd.DataFrame(field_chart_records)
+            
+            base_field = alt.Chart(field_chart_df).encode(
+                x=alt.X('Milestone:N', sort=standings_milestones, title="Race Milestone", axis=alt.Axis(grid=True, domain=True, labelAngle=0)),
+                y=alt.Y('GraphPosition:Q', scale=alt.Scale(domain=[1, total_participants]), title="Rank", axis=alt.Axis(labels=False, ticks=False, grid=True, domain=True)),
+                color=alt.Color('Participant:N', legend=alt.Legend(orient='bottom', direction='vertical', titleColor='black', labelColor='black'))
+            )
+            
+            lines_field = base_field.mark_line(strokeWidth=3).encode()
+            points_field = base_field.mark_circle(size=60)
+            labels_field = base_field.mark_text(align='left', dx=7, dy=-7, fontStyle='bold', fontSize=11, color='black').encode(text='RawDisplay:N')
+            
+            chart_obj = (lines_field + points_field + labels_field).properties(width=800, height=320, background='white').configure_axis(
+                labelColor='black', titleColor='black'
+            )
             
             st.markdown('<div class="scroll-container">', unsafe_allow_html=True)
-            st.altair_chart(chart_obj.properties(width=800, height=320, background='white'), use_container_width=False)
+            st.altair_chart(chart_obj, use_container_width=False)
             st.markdown('</div>', unsafe_allow_html=True)
+            st.caption("ℹ️ Swipe right on the graph above to track later race milestones.")
             st.write("---")
 
-        master_df = master_df[["Final Place", "Name", "Final Pts", "100L Pts", "150L Pts"]].sort_values(by=["Final Place", "Name"])
-        st.dataframe(master_df, column_config={"Final Place": st.column_config.NumberColumn("Rank", format="%d"), "Name": st.column_config.TextColumn("Participant"), "Final Pts": "Fin Pts", "100L Pts": "Lap 100", "150L Pts": "Lap 150"}, use_container_width=True, hide_index=True)
+        column_order = ["Final Place", "Name", "Final Pts", "100L Pts", "150L Pts"]
+        master_df = master_df[column_order].sort_values(by=["Final Place", "Name"])
+
+        st.dataframe(
+            master_df, 
+            column_config={
+                "Final Place": st.column_config.NumberColumn("Rank", format="%d"),
+                "Name": st.column_config.TextColumn("Participant"),
+                "Final Pts": "Fin Pts",
+                "100L Pts": "Lap 100",
+                "150L Pts": "Lap 150"
+            },
+            use_container_width=True, 
+            hide_index=True
+        )
 
 # --- SYSTEM ADMIN COMMAND DECK ---
 st.write("---")
-with st.expander("🛠️ Admin Command Deck"):
+with st.expander("🛠️ Admin Command Deck (Edit / Delete Entry Controls)"):
+    st.subheader("Reset Race Milestone Positions")
+    st.markdown("Use this during testing to instantly clear all manual inputs for Lap 100, Lap 150, and Final standings, resetting fields clean to 0.")
+    
     if st.button("Clear Milestone Data & Reset Field", type="secondary"):
-        if os.path.exists(POSITIONS_FILE): os.remove(POSITIONS_FILE)
+        if os.path.exists(POSITIONS_FILE):
+            os.remove(POSITIONS_FILE)
         st.success("All test milestones successfully cleared back to 0!")
         st.rerun()
+        
     st.write("---")
-    if not picks_df.empty:
+
+    if picks_df.empty:
+        st.info("No participant records currently stored to edit.")
+    else:
+        st.subheader("Delete an Entry Profile Lineup")
         delete_target = st.selectbox("Select Entry to Permanently Delete:", picks_df['Participant'].tolist(), key="admin_del_select")
+        
         if st.button("Permanently Delete Roster", type="primary"):
-            picks_df[picks_df['Participant'] != delete_target].to_csv(PICK_FILE, index=False)
+            updated_picks = picks_df[picks_df['Participant'] != delete_target]
+            updated_picks.to_csv(PICK_FILE, index=False)
             st.success(f"Successfully erased profile data for: {delete_target}")
             st.rerun()
