@@ -6,7 +6,7 @@ import os
 # Page layout setup
 st.set_page_config(page_title="Indy 500 Pool Engine", layout="centered")
 
-# Custom Styling: Checkered background pattern and clean table alignments
+# Custom Styling: Checkered background pattern, tab highlights, and clean table alignments
 st.markdown("""
     <style>
     /* Set a clean, responsive checkered flag background pattern */
@@ -25,9 +25,21 @@ st.markdown("""
         color: #000000 !important;
     }
 
-    /* PRESERVE SEGMENTED CONTROL / TAB TEXT CONTRAST */
-    [data-testid="stSegmentedControl"] button p {
-        color: inherit !important;
+    /* CUSTOM TAB STYLING: Unused tabs = Light Blue, Active Tab = Light Pink */
+    div[data-testid="stSegmentedControl"] button[aria-checked="false"] {
+        background-color: #e1f5fe !important;
+        border: 1px solid #b3e5fc !important;
+    }
+    div[data-testid="stSegmentedControl"] button[aria-checked="false"] p {
+        color: #0277bd !important; /* Rich blue text for unselected visibility */
+    }
+    div[data-testid="stSegmentedControl"] button[aria-checked="true"] {
+        background-color: #fce4ec !important;
+        border: 1px solid #f8bbd0 !important;
+    }
+    div[data-testid="stSegmentedControl"] button[aria-checked="true"] p {
+        color: #c2185b !important; /* Rich pink/crimson text for selected visibility */
+        font-weight: bold !important;
     }
     
     /* Target images inside columns to center vertically and fit horizontally */
@@ -44,18 +56,35 @@ st.markdown("""
         align-items: center !important;
     }
     
-    /* MOBILE TEXT FIX: Force table container cells to display completely on narrow viewports */
+    /* HORIZONTAL SCROLL FOR WIDE GRAPHS */
+    .scroll-container {
+        width: 100%;
+        overflow-x: auto;
+        white-space: nowrap;
+        background-color: #ffffff;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 10px;
+        margin-bottom: 15px;
+    }
+    
+    /* MOBILE TEXT & WHITE BACKGROUND FIX FOR DATAFRAMES */
     [data-testid="stDataFrame"] {
         width: 100% !important;
         overflow-x: auto;
+        background-color: #ffffff !important;
+    }
+    [data-testid="stDataFrame"] div[data-testid="stTable"] {
+        background-color: #ffffff !important;
     }
     [data-testid="stDataFrame"] div[data-testid="stTable"] th,
     [data-testid="stDataFrame"] div[data-testid="stTable"] td {
-        color: #000000 !important;   /* Hard-forces table text to remain black */
+        color: #000000 !important;   
+        background-color: #ffffff !important;
         text-align: center !important;
-        white-space: normal !important; /* Forces text to wrap instead of cutting off */
-        font-size: 13px !important;     /* Marginally smaller text for phone layouts */
-        padding: 4px 6px !important;    /* Tighter padding to save real estate */
+        white-space: normal !important; 
+        font-size: 13px !important;     
+        padding: 4px 6px !important;    
     }
     /* Force left alignment specifically for the Participant Name column cells */
     [data-testid="stDataFrame"] div[data-testid="stTable"] td:nth-child(2),
@@ -67,7 +96,7 @@ st.markdown("""
 
 st.title("🏎️ Indy 500: VanGutz Style")
 
-# 1. Base Starting Grid Data (All arrays carefully aligned to exactly 33 rows)
+# 1. Base Starting Grid Data
 @st.cache_data
 def get_base_drivers():
     data = {
@@ -125,7 +154,7 @@ def get_base_drivers():
     }
     return pd.DataFrame(data)
 
-# 2. Sync Race Positions Database (Tracks milestones across reloads)
+# 2. Sync Race Positions Database
 POSITIONS_FILE = "race_positions.csv"
 def load_race_positions():
     base_df = get_base_drivers()
@@ -134,7 +163,6 @@ def load_race_positions():
         if all(col in pos_df.columns for col in ["Driver", "Pos_100", "Pos_150", "Pos_Final"]):
             return pd.merge(base_df, pos_df[["Driver", "Pos_100", "Pos_150", "Pos_Final"]], on="Driver", how="left")
     
-    # Starting conditions: Milestones default to 0
     base_df["Pos_100"] = 0
     base_df["Pos_150"] = 0
     base_df["Pos_Final"] = 0
@@ -151,7 +179,7 @@ def load_picks():
 
 picks_df = load_picks()
 
-# Helper function to generate current standings calculations for historical mapping
+# Helper function to generate current standings calculations
 def calculate_master_standings():
     if picks_df.empty:
         return pd.DataFrame()
@@ -176,7 +204,6 @@ def calculate_master_standings():
         
     master_df = pd.DataFrame(leaderboard_data)
     
-    # Explicitly calculate placing sequences dynamically across intervals
     master_df = master_df.sort_values(by="Starting Pts", ascending=True)
     master_df["Start Place"] = range(1, len(master_df) + 1)
     
@@ -200,7 +227,7 @@ def calculate_master_standings():
         
     return master_df
 
-# 4. Clear One-Click Navigation Layout
+# 4. Navigation Layout
 tab_options = ["🏆 Standings", "📝 Visual Draft Board", "🏁 Live Field", "📋 Roster View", "📊 Popular Picks"]
 
 selected_tab = st.segmented_control(
@@ -220,7 +247,7 @@ if selected_tab == "🏆 Standings":
     else:
         master_df = calculate_master_standings()
         
-        # --- COMBINED PARTICIPANTS STANDINGS TRACKING CHART ---
+        # --- DECLUTTERED & SCROLLABLE PERFORMANCE TRACKER ---
         st.subheader("Pool Field Performance Tracker")
         total_participants = len(master_df)
         standings_milestones = ["Start", "Lap 100", "Lap 150", "Finish"]
@@ -229,7 +256,6 @@ if selected_tab == "🏆 Standings":
         for _, p_row in master_df.iterrows():
             places = [p_row['Start Place'], p_row['100L Place'], p_row['150L Place'], p_row['Final Place']]
             for m_lbl, place_val in zip(standings_milestones, places):
-                # Clean skip data markers if a given segment timeline hasn't finished yet
                 if m_lbl == "Start" or place_val != 0:
                     graph_coord = (total_participants + 1) - place_val
                     field_chart_records.append({
@@ -243,23 +269,27 @@ if selected_tab == "🏆 Standings":
             field_chart_df = pd.DataFrame(field_chart_records)
             
             base_field = alt.Chart(field_chart_df).encode(
-                x=alt.X('Milestone:N', sort=standings_milestones, title="Race Milestone", axis=alt.Axis(grid=True, domain=True)),
+                x=alt.X('Milestone:N', sort=standings_milestones, title="Race Milestone", axis=alt.Axis(grid=True, domain=True, labelAngle=0)),
                 y=alt.Y('GraphPosition:Q', scale=alt.Scale(domain=[1, total_participants]), title="Pool Standing Rank (Top is 1st)", axis=alt.Axis(labels=False, ticks=False, grid=True, domain=True)),
                 color='Participant:N'
+            ).properties(
+                background='white' # Force white background on graph
             )
             
             lines_field = base_field.mark_line(strokeWidth=3).encode()
             points_field = base_field.mark_circle(size=60)
             labels_field = base_field.mark_text(align='left', dx=7, dy=-7, fontStyle='bold', fontSize=11).encode(text='RawDisplay:N')
             
-            st.altair_chart((lines_field + points_field + labels_field).properties(height=300), use_container_width=True)
-            st.caption("ℹ️ Higher lines indicate superior pool standings. Ranks update live as milestone track coordinates change.")
+            chart_obj = (lines_field + points_field + labels_field).properties(width=800, height=320)
+            
+            # Render inside scrollable wrapper to prevent mobile clamping congestion
+            st.markdown('<div class="scroll-container">', unsafe_allow_html=True)
+            st.altair_chart(chart_obj, use_container_width=False)
+            st.markdown('</div>', unsafe_allow_html=True)
+            st.caption("ℹ️ Swipe right on the graph above to track later race milestones.")
             st.write("---")
 
-        # Format layout ordering and sorting optimized for small mobile phone viewports
-        column_order = [
-            "Final Place", "Name", "Final Pts", "100L Pts", "150L Pts"
-        ]
+        column_order = ["Final Place", "Name", "Final Pts", "100L Pts", "150L Pts"]
         master_df = master_df[column_order].sort_values(by=["Final Place", "Name"])
 
         st.dataframe(
@@ -445,6 +475,8 @@ elif selected_tab == "🏁 Live Field":
                     base = alt.Chart(single_driver_df).encode(
                         x=alt.X('Milestone:N', sort=m_labels, title="Milestone", axis=alt.Axis(grid=True, domain=True)),
                         y=alt.Y('GraphPosition:Q', scale=alt.Scale(domain=[1, 33]), title="Track Position (Top is Lead)", axis=alt.Axis(labels=False, ticks=False, grid=True, domain=True))
+                    ).properties(
+                        background='white'
                     )
                     
                     lines = base.mark_line(color="#ff4b4b").encode()
@@ -495,6 +527,8 @@ elif selected_tab == "📋 Roster View":
                 base_pool = alt.Chart(pool_chart_df).encode(
                     x=alt.X('Milestone:N', sort=standings_milestones, title="Race Milestone", axis=alt.Axis(grid=True, domain=True)),
                     y=alt.Y('GraphPosition:Q', scale=alt.Scale(domain=[1, total_participants]), title="Pool Standing Rank (Top is 1st)", axis=alt.Axis(labels=False, ticks=False, grid=True, domain=True))
+                ).properties(
+                    background='white'
                 )
                 
                 lines_pool = base_pool.mark_line(color="#1f77b4", strokeWidth=3).encode()
@@ -502,7 +536,7 @@ elif selected_tab == "📋 Roster View":
                 labels_pool = base_pool.mark_text(align='left', dx=8, dy=-8, fontStyle='bold', fontSize=12).encode(text='RawDisplay:N')
                 
                 st.altair_chart((lines_pool + points_pool + labels_pool).properties(height=160), use_container_width=True)
-                st.caption("ℹ️ Charts track overall pool placement. Higher curves mean you are leading the standings ladder.")
+                st.caption("ℹ nighttime curves mean you are leading the standings ladder.")
         
         st.write("---")
         
@@ -529,6 +563,8 @@ elif selected_tab == "📋 Roster View":
                 x=alt.X('Milestone:N', sort=milestones, title="Race Milestone", axis=alt.Axis(grid=True, domain=True)),
                 y=alt.Y('GraphPosition:Q', scale=alt.Scale(domain=[1, 33]), title="Track Position Rank (Top is Lead)", axis=alt.Axis(labels=False, ticks=False, grid=True, domain=True)),
                 color='Driver:N'
+            ).properties(
+                background='white'
             )
             
             lines_multi = base_multi.mark_line().encode()
@@ -588,6 +624,8 @@ elif selected_tab == "📊 Popular Picks":
                         base_pop = alt.Chart(single_driver_df).encode(
                             x=alt.X('Milestone:N', sort=m_labels, title="Milestone", axis=alt.Axis(grid=True, domain=True)),
                             y=alt.Y('GraphPosition:Q', scale=alt.Scale(domain=[1, 33]), title="Track Position (Top is Lead)", axis=alt.Axis(labels=False, ticks=False, grid=True, domain=True))
+                        ).properties(
+                            background='white'
                         )
                         
                         lines_pop = base_pop.mark_line(color="#ff4b4b").encode()
