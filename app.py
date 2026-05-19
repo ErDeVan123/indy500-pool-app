@@ -263,7 +263,7 @@ def calculate_master_standings():
     return master_df
 
 # 4. Navigation Layout using native st.tabs
-tab_names = ["🏆 Standings", "📝 Draft Drivers", "🏁 Milestone Ranks", "📋 Roster View", "📊 Popular Picks"]
+tab_names = ["🏆 Standings", "📝 Draft Drivers", "🏁 Milestone Ranks", "📋 View Rosters", "📊 Popular Picks"]
 t1, t2, t3, t4, t5 = st.tabs(tab_names)
 
 # --- VIEW 1: OVERALL STANDINGS ---
@@ -323,8 +323,8 @@ with t1:
                 "Final Place": st.column_config.NumberColumn("Rank", format="%d"),
                 "Name": st.column_config.TextColumn("Participant"),
                 "Final Pts": "Fin Pts",
-                "100L Pts": "100L",
-                "150L Pts": "150L"
+                "100L Pts": "Lap 100",
+                "150L Pts": "Lap 150"
             },
             use_container_width=True, 
             hide_index=True
@@ -509,11 +509,10 @@ with t3:
 
 # --- VIEW 4: ROSTER VIEW ---
 with t4:
-    st.header("Roster Inspection Profiles")
     if picks_df.empty:
         st.info("No active rosters submitted.")
     else:
-        user = st.selectbox("Choose Entry Profile:", picks_df['Participant'].tolist())
+        user = st.selectbox("Whose roster would you like to see:", picks_df['Participant'].tolist())
         u_row = picks_df[picks_df['Participant'] == user].iloc[0]
         u_picks = [u_row['P1'], u_row['P2'], u_row['P3'], u_row['P4'], u_row['P5'], u_row['P6'], u_row['P7'], u_row['P8']]
         
@@ -521,7 +520,7 @@ with t4:
         u_df = df[df['Driver'].isin(u_picks)].sort_values(by=sort_basis)
         
         # --- PARTICIPANT OVERALL STANDINGS PLACE GRAPH ---
-        st.subheader("Your Pool Standings Progress Tracker")
+        st.subheader(f"{user}'s Quest for Milk Drinking Immortality")
         master_standings = calculate_master_standings()
         
         if not master_standings.empty:
@@ -562,7 +561,7 @@ with t4:
         st.write("---")
         
         # --- ROSTER WIDE MULTI-DRIVER LINE GRAPH ---
-        st.subheader("Lineup Milestone Progression Tracker")
+        st.subheader("Driver lineup progression")
         chart_records = []
         milestones = ["Start", "Lap 100", "Lap 150", "Finish"]
         
@@ -585,7 +584,7 @@ with t4:
                 y=alt.Y(
                     'GraphPosition:Q', 
                     scale=alt.Scale(domain=[1, 33]), 
-                    title="Track Position Rank", 
+                    title="Rank", 
                     axis=alt.Axis(
                         grid=True, 
                         domain=True, 
@@ -615,7 +614,7 @@ with t4:
             with st.container(border=True):
                 col1, col2 = st.columns([4.0, 4.0])
                 col1.markdown(f"**{row['Driver']}** *(#{row['Car_Num']})*")
-                col1.caption(f"Grid Start: P{row['Starting_Pos']} | 100L: P{row['Pos_100']} | 150L: P{row['Pos_150']} | Final: P{row['Pos_Final']}")
+                col1.caption(f"Start: P{row['Starting_Pos']} | Lap 100: P{row['Pos_100']} | Lap 150: P{row['Pos_150']} | Finish: P{row['Pos_Final']}")
                 with col2:
                     st.image(row['Car_Pic'])
 
