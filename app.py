@@ -516,7 +516,15 @@ with t4:
         u_row = picks_df[picks_df['Participant'] == user].iloc[0]
         u_picks = [u_row['P1'], u_row['P2'], u_row['P3'], u_row['P4'], u_row['P5'], u_row['P6'], u_row['P7'], u_row['P8']]
         
-        sort_basis = "Pos_Final" if df["Pos_Final"].sum() == 561 else ("Pos_150" if df["Pos_150"].sum() == 561 else ("Pos_100" if df["Pos_100"].sum() == 561 else "Starting_Pos"))
+        # Check if the race is officially marked finished (sum of positions 1 to 33 equals 561)
+        race_is_finished = df["Pos_Final"].sum() == 561
+        
+        # Sort by finishing placement if complete, else default down to earlier milestones or qualifying grid layout
+        if race_is_finished:
+            sort_basis = "Pos_Final"
+        else:
+            sort_basis = "Pos_150" if df["Pos_150"].sum() == 561 else ("Pos_100" if df["Pos_100"].sum() == 561 else "Starting_Pos")
+            
         u_df = df[df['Driver'].isin(u_picks)].sort_values(by=sort_basis)
         
         # --- PARTICIPANT OVERALL STANDINGS PLACE GRAPH ---
@@ -613,8 +621,22 @@ with t4:
         for _, row in u_df.iterrows():
             with st.container(border=True):
                 col1, col2 = st.columns([4.0, 4.0])
-                col1.markdown(f"**{row['Driver']}** *(#{row['Car_Num']})*")
-                col1.caption(f"Start: P{row['Starting_Pos']} | Lap 100: P{row['Pos_100']} | Lap 150: P{row['Pos_150']} | Finish: P{row['Pos_Final']}")
+                with col1:
+                    # Using st.subheader() here enforces visual match with draft board profile sizes
+                    st.subheader(row['Driver'])
+                    st.caption(f"#{row['Car_Num']} | {row['Team']}")
+                    st.caption(f"Start: P{row['Starting_Pos']} | Lap 100: P{row['Pos_100']} | Lap 150: P{row['Pos_150']} | Finish: P{row['Pos_Final']}")
+                    
+                    # Compute & render positional shift if the race is completed
+                    if race_is_finished:
+                        pos_differential = int(row['Starting_Pos']) - int(row['Pos_Final'])
+                        if pos_differential > 0:
+                            st.markdown(f"📈 **Gained {pos_differential} places** during the race.")
+                        elif pos_differential < 0:
+                            st.markdown(f"📉 **Lost {abs(pos_differential)} places** during the race.")
+                        else:
+                            st.markdown("↔️ **Held position** exactly from grid position to checkered flag.")
+                            
                 with col2:
                     st.image(row['Car_Pic'])
 
