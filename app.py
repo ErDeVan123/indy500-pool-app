@@ -406,9 +406,8 @@ with t2:
 
 # --- VIEW 3: LIVE FIELD RUNNING ORDER ---
 with t3:
-    # Simple light-mode selectbox replacement for sub-tabs to protect text visibility
     sort_basis_label = st.selectbox(
-        "Display Sort Metric:",
+        "Milestone to display:",
         options=["Starting Order", "Running Order @ Lap 100", "Running Order @ Lap 150", "Finishing Order"]
     )
     
@@ -426,7 +425,55 @@ with t3:
         display_title = "Starting Order"
 
     st.write("---")
+    st.subheader(display_title)
+    
+    sorted_df = df.copy()
+    if sort_by_col != "Starting_Pos":
+        sorted_df["sort_key"] = sorted_df[sort_by_col].apply(lambda x: 99 if x == 0 else x)
+        sorted_df = sorted_df.sort_values(by=["sort_key", "Starting_Pos"], ascending=True)
+    else:
+        sorted_df = sorted_df.sort_values(by="Starting_Pos", ascending=True)
+    
+    for _, row in sorted_df.iterrows():
+        with st.container(border=True):
+            col1, col2 = st.columns([4.0, 4.0])
+            with col1:
+                current_val = row[sort_by_col]
+                metric_label = f"P{current_val}" if current_val != 0 else "--"
+                st.metric("Current Order", metric_label)
+                st.subheader(row['Driver'])
+                st.caption(f"#{row['Car_Num']} | {row['Team']}")
+                
+                # --- INDIVIDUAL FIELD DRIVER PROFILE CHART ---
+                m_labels = ["Start", "Lap 100", "Lap 150", "Finish"]
+                m_vals = [row['Starting_Pos'], row['Pos_100'], row['Pos_150'], row['Pos_Final']]
+                
+                driver_history = []
+                for lbl, val in zip(m_labels, m_vals):
+                    if lbl == "Start" or val != 0:
+                        driver_history.append({"Milestone": lbl, "GraphPosition": 34 - val, "RawDisplay": f"P{val}"})
+                        
+                if len(driver_history) > 1:
+                    single_driver_df = pd.DataFrame(driver_history)
+                    
+                    base = alt.Chart(single_driver_df).encode(
+                        x=alt.X('Milestone:N', sort=m_labels, title="Milestone", axis=alt.Axis(grid=True, domain=True)),
+                        y=alt.Y('GraphPosition:Q', scale=alt.Scale(domain=[1, 33]), title="Rank", axis=alt.Axis(labels=False, ticks=False, grid=True, domain=True))
+                    )
+                    
+                    lines = base.mark_line(color="#ff4b4b").encode()
+                    points = base.mark_circle(size=60, color="#ff4b4b")
+                    labels = base.mark_text(align='left', dx=7, dy=-7, fontStyle='bold', fontSize=11, color='black').encode(text='RawDisplay:N')
+                    
+                    chart_render = (lines + points + labels).properties(height=175, background='white').configure_axis(
+                        labelColor='black', titleColor='black'
+                    )
+                    st.altair_chart(chart_render, use_container_width=True)
+            with col2:
+                st.image(row['Car_Pic'])
 
+    # --- MOVING TIMING TOWER MANAGEMENT SECTION TO BOTTOM ---
+    st.write("---")
     with st.expander("🛠️ Live Race Timing Tower Management (Input Milestone Positions Here)"):
         st.markdown("Select placement ranks via the dropdown boxes. Uncompleted points map safely to `0`.")
         
@@ -459,54 +506,6 @@ with t3:
             save_df.to_csv(POSITIONS_FILE, index=False)
             st.success("Track intervals securely recorded!")
             st.rerun()
-
-    st.subheader(display_title)
-    
-    sorted_df = df.copy()
-    if sort_by_col != "Starting_Pos":
-        sorted_df["sort_key"] = sorted_df[sort_by_col].apply(lambda x: 99 if x == 0 else x)
-        sorted_df = sorted_df.sort_values(by=["sort_key", "Starting_Pos"], ascending=True)
-    else:
-        sorted_df = sorted_df.sort_values(by="Starting_Pos", ascending=True)
-    
-    for _, row in sorted_df.iterrows():
-        with st.container(border=True):
-            col1, col2 = st.columns([4.0, 4.0])
-            with col1:
-                current_val = row[sort_by_col]
-                metric_label = f"P{current_val}" if current_val != 0 else "--"
-                st.metric("Current Order", metric_label)
-                st.subheader(row['Driver'])
-                st.caption(f"#{row['Car_Num']} | {row['Team']}")
-                st.markdown(f"🏁 **P{row['Pos_100']}** (100L) | **P{row['Pos_150']}** (150L) | **P{row['Pos_Final']}** (Fin)")
-                
-                # --- INDIVIDUAL FIELD DRIVER PROFILE CHART ---
-                m_labels = ["Start", "Lap 100", "Lap 150", "Finish"]
-                m_vals = [row['Starting_Pos'], row['Pos_100'], row['Pos_150'], row['Pos_Final']]
-                
-                driver_history = []
-                for lbl, val in zip(m_labels, m_vals):
-                    if lbl == "Start" or val != 0:
-                        driver_history.append({"Milestone": lbl, "GraphPosition": 34 - val, "RawDisplay": f"P{val}"})
-                        
-                if len(driver_history) > 1:
-                    single_driver_df = pd.DataFrame(driver_history)
-                    
-                    base = alt.Chart(single_driver_df).encode(
-                        x=alt.X('Milestone:N', sort=m_labels, title="Milestone", axis=alt.Axis(grid=True, domain=True)),
-                        y=alt.Y('GraphPosition:Q', scale=alt.Scale(domain=[1, 33]), title="Track Position (Top is Lead)", axis=alt.Axis(labels=False, ticks=False, grid=True, domain=True))
-                    )
-                    
-                    lines = base.mark_line(color="#ff4b4b").encode()
-                    points = base.mark_circle(size=60, color="#ff4b4b")
-                    labels = base.mark_text(align='left', dx=7, dy=-7, fontStyle='bold', fontSize=11, color='black').encode(text='RawDisplay:N')
-                    
-                    chart_render = (lines + points + labels).properties(height=175, background='white').configure_axis(
-                        labelColor='black', titleColor='black'
-                    )
-                    st.altair_chart(chart_render, use_container_width=True)
-            with col2:
-                st.image(row['Car_Pic'])
 
 # --- VIEW 4: ROSTER VIEW ---
 with t4:
@@ -660,7 +659,7 @@ with t5:
                         
                         base_pop = alt.Chart(single_driver_df).encode(
                             x=alt.X('Milestone:N', sort=m_labels, title="Milestone", axis=alt.Axis(grid=True, domain=True)),
-                            y=alt.Y('GraphPosition:Q', scale=alt.Scale(domain=[1, 33]), title="Track Position (Top is Lead)", axis=alt.Axis(labels=False, ticks=False, grid=True, domain=True))
+                            y=alt.Y('GraphPosition:Q', scale=alt.Scale(domain=[1, 33]), title="Rank", axis=alt.Axis(labels=False, ticks=False, grid=True, domain=True))
                         )
                         
                         lines_pop = base_pop.mark_line(color="#ff4b4b").encode()
