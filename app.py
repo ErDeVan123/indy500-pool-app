@@ -175,7 +175,7 @@ def get_base_drivers():
             "https://your-hosting-site.com/car-3.jpg", "https://your-hosting-site.com/car-9.jpg",
             "https://your-hosting-site.com/car-76.jpg", "https://your-hosting-site.com/car-75.jpg",
             "https://your-hosting-site.com/car-33.jpg", "https://your-hosting-site.com/car-6.jpg",
-            "https://your-hosting-site.com/car-21.jpg", "https://your-hosting-site.com/car-66.jpg",
+            "https://your-running-site.com/car-21.jpg", "https://your-hosting-site.com/car-66.jpg",
             "https://your-running-site.com/car-28.jpg", "https://your-hosting-site.com/car-7.jpg",
             "https://your-hosting-site.com/car-26.jpg", "https://your-hosting-site.com/car-6b.jpg",
             "https://your-running-site.com/car-45.jpg", "https://your-hosting-site.com/car-31.jpg",
@@ -274,7 +274,7 @@ with t1:
     else:
         master_df = calculate_master_standings()
         
-        # --- DECLUTTERED & SCROLLABLE PERFORMANCE TRACKER ---
+        # --- SCROLLABLE PERFORMANCE TRACKER ---
         total_participants = len(master_df)
         standings_milestones = ["Start", "Lap 100", "Lap 150", "Finish"]
         
@@ -332,7 +332,6 @@ with t1:
 
 # --- VIEW 2: HARD-VALIDATED DRAFT BOARD ---
 with t2:
-    st.header("Interactive Draft Field")
     st.markdown("Select exactly **8 drivers**. Maximum **3 from Rows 1-3**.")
     
     entry_name = st.text_input("Enter Roster Submission Name:", key="new_user_name", placeholder="e.g., Sarah - Lineup 1").strip()
@@ -370,7 +369,6 @@ with t2:
                 st.image(row['Car_Pic'])
 
     st.write("---")
-    st.subheader("Roster Validation Dashboard")
     
     current_picks = st.session_state["selected_pool"]
     count_picked = len(current_picks)
@@ -408,12 +406,10 @@ with t2:
 
 # --- VIEW 3: LIVE FIELD RUNNING ORDER ---
 with t3:
-    st.header("Actual Indy 500 Running Order")
-    
     # Simple light-mode selectbox replacement for sub-tabs to protect text visibility
     sort_basis_label = st.selectbox(
         "Display Sort Metric:",
-        options=["Official Initial Grid Ranks", "Running Order @ Lap 100", "Running Order @ Lap 150", "Final Track Finishing Order"]
+        options=["Starting Order", "Running Order @ Lap 100", "Running Order @ Lap 150", "Finishing Order"]
     )
     
     if sort_basis_label == "Running Order @ Lap 100":
@@ -422,12 +418,12 @@ with t3:
     elif sort_basis_label == "Running Order @ Lap 150":
         sort_by_col = "Pos_150"
         display_title = "Running Order @ Lap 150"
-    elif sort_basis_label == "Final Track Finishing Order":
+    elif sort_basis_label == "Finishing Order":
         sort_by_col = "Pos_Final"
-        display_title = "Final Track Finishing Order"
+        display_title = "Finishing Order"
     else:
         sort_by_col = "Starting_Pos"
-        display_title = "Official Initial Grid Ranks"
+        display_title = "Starting Order"
 
     st.write("---")
 
