@@ -33,15 +33,22 @@ st.markdown("""
     [data-testid="stHorizontalBlock"] {
         align-items: center !important;
     }
-    /* Target the standings dataframe to center columns */
+    
+    /* MOBILE TEXT FIX: Force table container cells to display completely on narrow viewports */
+    [data-testid="stDataFrame"] {
+        width: 100% !important;
+        overflow-x: auto;
+    }
     [data-testid="stDataFrame"] div[data-testid="stTable"] th,
     [data-testid="stDataFrame"] div[data-testid="stTable"] td {
         text-align: center !important;
-        white-space: normal !important; /* Allow label text wrapping to save width */
+        white-space: normal !important; /* Forces text to wrap instead of cutting off */
+        font-size: 13px !important;     /* Marginally smaller text for phone layouts */
+        padding: 4px 6px !important;    /* Tighter padding to save real estate */
     }
-    /* Force left alignment specifically for the Name column cells (4th item in sequence) */
-    [data-testid="stDataFrame"] div[data-testid="stTable"] td:nth-child(4),
-    [data-testid="stDataFrame"] div[data-testid="stTable"] th:nth-child(4) {
+    /* Force left alignment specifically for the Participant Name column cells */
+    [data-testid="stDataFrame"] div[data-testid="stTable"] td:nth-child(2),
+    [data-testid="stDataFrame"] div[data-testid="stTable"] th:nth-child(2) {
         text-align: left !important;
     }
     </style>
@@ -202,7 +209,7 @@ if selected_tab == "🏆 Standings":
     else:
         master_df = calculate_master_standings()
         
-        # --- NEW: COMBINED PARTICIPANTS STANDINGS TRACKING CHART ---
+        # --- COMBINED PARTICIPANTS STANDINGS TRACKING CHART ---
         st.subheader("Pool Field Performance Tracker")
         total_participants = len(master_df)
         standings_milestones = ["Start", "Lap 100", "Lap 150", "Finish"]
@@ -238,24 +245,20 @@ if selected_tab == "🏆 Standings":
             st.caption("ℹ️ Higher lines indicate superior pool standings. Ranks update live as milestone track coordinates change.")
             st.write("---")
 
-        # Format layout ordering and sorting
+        # Format layout ordering and sorting optimized for small mobile phone viewports
         column_order = [
-            "Final Place", "100L Place", "150L Place", "Name", 
-            "Final Pts", "100L Pts", "150L Pts", "Starting Pts"
+            "Final Place", "Name", "Final Pts", "100L Pts", "150L Pts"
         ]
         master_df = master_df[column_order].sort_values(by=["Final Place", "Name"])
 
         st.dataframe(
             master_df, 
             column_config={
-                "Final Place": st.column_config.NumberColumn("Final Place", format="%d"),
-                "100L Place": st.column_config.NumberColumn("100L Place", format="%d"),
-                "150L Place": st.column_config.NumberColumn("150L Place", format="%d"),
-                "Name": st.column_config.TextColumn("Name"),
-                "Final Pts": "Final Pts",
-                "100L Pts": "100L Pts",
-                "150L Pts": "150L Pts",
-                "Starting Pts": "Starting Pts"
+                "Final Place": st.column_config.NumberColumn("Rank", format="%d"),
+                "Name": st.column_config.TextColumn("Participant"),
+                "Final Pts": "Fin Pts",
+                "100L Pts": "100L",
+                "150L Pts": "150L"
             },
             use_container_width=True, 
             hide_index=True
