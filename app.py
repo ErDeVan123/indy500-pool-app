@@ -20,6 +20,11 @@ st.markdown("""
         background-color: #ffffff;
     }
     
+    /* FORCE TEXT VISIBILITY ON MOBILE/DARK OVERRIDES */
+    .stApp h1, .stApp h2, .stApp h3, .stApp p, .stApp span, .stApp label, .stApp div, .stApp small {
+        color: #000000 !important;
+    }
+    
     /* Target images inside columns to center vertically and fit horizontally */
     [data-testid="stImage"] img {
         height: 100px !important;
@@ -41,6 +46,7 @@ st.markdown("""
     }
     [data-testid="stDataFrame"] div[data-testid="stTable"] th,
     [data-testid="stDataFrame"] div[data-testid="stTable"] td {
+        color: #000000 !important;   /* Hard-forces table text to remain black */
         text-align: center !important;
         white-space: normal !important; /* Forces text to wrap instead of cutting off */
         font-size: 13px !important;     /* Marginally smaller text for phone layouts */
