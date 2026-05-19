@@ -90,13 +90,6 @@ def get_base_drivers():
             "https://your-hosting-site.com/car-12.jpg", "https://your-hosting-site.com/car-60.jpg",
             "https://your-hosting-site.com/car-14.jpg", "https://your-hosting-site.com/car-5.jpg",
             "https://your-hosting-site.com/car-8.jpg", "https://your-hosting-site.com/car-23.jpg",
-            "https://your-hosting-site.com/car-3.jpg", "https://your-hosting-site.com/car-9.jpg",
-            "https://your-hosting-site.com/car-76.jpg", "https://your-hosting-site.com/car-75.jpg",
-            "https://your-hosting-site.com/car-33.jpg", "https://your-hosting-site.com/car-6.jpg",
-            "https://your-hosting-site.com/car-21.jpg", "https://your-hosting-site.com/car-66.jpg",
-            "https://your-hosting-site.com/car-28.jpg", "https://your-hosting-site.com/car-7.jpg",
-            "https://your-hosting-site.com/car-26.jpg", "https://your-hosting-site.com/car-6b.jpg",
-            "https://your-hosting-site.com/car-45.jpg", "https://your-hosting-site.com/car-31.jpg",
             "https://your-running-site.com/car-2.jpg", "https://your-hosting-site.com/car-18.jpg",
             "https://your-hosting-site.com/car-27.jpg", "https://your-hosting-site.com/car-11.jpg",
             "https://your-hosting-site.com/car-47.jpg", "https://your-hosting-site.com/car-15.jpg",
@@ -371,22 +364,29 @@ elif selected_tab == "🏁 Live Field":
                 st.caption(f"#{row['Car_Num']} | {row['Team']}")
                 st.markdown(f"🏁 **P{row['Pos_100']}** (100L) | **P{row['Pos_150']}** (150L) | **P{row['Pos_Final']}** (Fin)")
                 
-                # --- LIVE FIELD INDIVIDUAL DRIVER PROFILE CHART (ALTAIR FIXED) ---
+                # --- INDIVIDUAL FIELD DRIVER PROFILE CHART (LOWER-LEFT INTERSECTION) ---
                 m_labels = ["Start", "Lap 100", "Lap 150", "Finish"]
                 m_vals = [row['Starting_Pos'], row['Pos_100'], row['Pos_150'], row['Pos_Final']]
                 
                 driver_history = []
                 for lbl, val in zip(m_labels, m_vals):
                     if lbl == "Start" or val != 0:
-                        driver_history.append({"Milestone": lbl, "Position": val})
+                        # Invert position logic mathematically so 1 sits at the graph ceiling (34 - position)
+                        driver_history.append({"Milestone": lbl, "GraphPosition": 34 - val, "RawDisplay": f"P{val}"})
                         
                 if len(driver_history) > 1:
                     single_driver_df = pd.DataFrame(driver_history)
-                    chart = alt.Chart(single_driver_df).mark_line(point=True).encode(
-                        x=alt.X('Milestone:N', sort=m_labels, title="Milestone"),
-                        y=alt.Y('Position:Q', scale=alt.Scale(domain=[1, 33], reverse=True), title="Track Position")
-                    ).properties(height=175)
-                    st.altair_chart(chart, use_container_width=True)
+                    
+                    base = alt.Chart(single_driver_df).encode(
+                        x=alt.X('Milestone:N', sort=m_labels, title="Milestone", axis=alt.Axis(grid=True, domain=True)),
+                        y=alt.Y('GraphPosition:Q', scale=alt.Scale(domain=[1, 33]), title="Track Position (Top is Lead)", axis=alt.Axis(labels=False, ticks=False, grid=True, domain=True))
+                    )
+                    
+                    lines = base.mark_line(color="#ff4b4b").encode()
+                    points = base.mark_circle(size=60, color="#ff4b4b")
+                    labels = base.mark_text(align='left', dx=7, dy=-7, fontStyle='bold', fontSize=11).encode(text='RawDisplay:N')
+                    
+                    st.altair_chart((lines + points + labels).properties(height=175), use_container_width=True)
             with col2:
                 st.image(row['Car_Pic'])
 
@@ -403,7 +403,7 @@ elif selected_tab == "📋 Roster View":
         sort_basis = "Pos_Final" if df["Pos_Final"].sum() == 561 else ("Pos_150" if df["Pos_150"].sum() == 561 else ("Pos_100" if df["Pos_100"].sum() == 561 else "Starting_Pos"))
         u_df = df[df['Driver'].isin(u_picks)].sort_values(by=sort_basis)
         
-        # --- ROSTER WIDE MULTI-DRIVER LINE GRAPH (ALTAIR FIXED) ---
+        # --- ROSTER WIDE MULTI-DRIVER LINE GRAPH (LOWER-LEFT INTERSECTION) ---
         st.subheader("Lineup Milestone Progression Tracker")
         chart_records = []
         milestones = ["Start", "Lap 100", "Lap 150", "Finish"]
@@ -414,18 +414,25 @@ elif selected_tab == "📋 Roster View":
                 if m_label == "Start" or pt != 0:
                     chart_records.append({
                         "Milestone": m_label,
-                        "Position": pt,
+                        "GraphPosition": 34 - pt,
+                        "RawDisplay": f"P{pt}",
                         "Driver": f"{row['Driver']} (#{row['Car_Num']})"
                     })
                     
         if chart_records:
             chart_df = pd.DataFrame(chart_records)
-            multi_chart = alt.Chart(chart_df).mark_line(point=True).encode(
-                x=alt.X('Milestone:N', sort=milestones, title="Race Milestone"),
-                y=alt.Y('Position:Q', scale=alt.Scale(domain=[1, 33], reverse=True), title="Track Position Rank"),
+            
+            base_multi = alt.Chart(chart_df).encode(
+                x=alt.X('Milestone:N', sort=milestones, title="Race Milestone", axis=alt.Axis(grid=True, domain=True)),
+                y=alt.Y('GraphPosition:Q', scale=alt.Scale(domain=[1, 33]), title="Track Position Rank (Top is Lead)", axis=alt.Axis(labels=False, ticks=False, grid=True, domain=True)),
                 color='Driver:N'
-            ).properties(height=350)
-            st.altair_chart(multi_chart, use_container_width=True)
+            )
+            
+            lines_multi = base_multi.mark_line().encode()
+            points_multi = base_multi.mark_circle(size=50)
+            labels_multi = base_multi.mark_text(align='left', dx=6, dy=-6, fontStyle='bold', fontSize=10).encode(text='RawDisplay:N')
+            
+            st.altair_chart((lines_multi + points_multi + labels_multi).properties(height=380), use_container_width=True)
             
         st.write("---")
         
@@ -463,22 +470,28 @@ elif selected_tab == "📊 Popular Picks":
                     else:
                         st.markdown("*Nobody has drafted this driver yet.*")
                         
-                    # --- POPULAR PICKS INDIVIDUAL DRIVER PROFILE CHART (ALTAIR FIXED) ---
+                    # --- POPULAR PICKS INDIVIDUAL DRIVER PROFILE CHART (LOWER-LEFT INTERSECTION) ---
                     m_labels = ["Start", "Lap 100", "Lap 150", "Finish"]
                     m_vals = [row['Starting_Pos'], row['Pos_100'], row['Pos_150'], row['Pos_Final']]
                     
                     driver_history = []
                     for lbl, val in zip(m_labels, m_vals):
                         if lbl == "Start" or val != 0:
-                            driver_history.append({"Milestone": lbl, "Position": val})
+                            driver_history.append({"Milestone": lbl, "GraphPosition": 34 - val, "RawDisplay": f"P{val}"})
                             
                     if len(driver_history) > 1:
                         single_driver_df = pd.DataFrame(driver_history)
-                        chart = alt.Chart(single_driver_df).mark_line(point=True).encode(
-                            x=alt.X('Milestone:N', sort=m_labels, title="Milestone"),
-                            y=alt.Y('Position:Q', scale=alt.Scale(domain=[1, 33], reverse=True), title="Track Position")
-                        ).properties(height=175)
-                        st.altair_chart(chart, use_container_width=True)
+                        
+                        base_pop = alt.Chart(single_driver_df).encode(
+                            x=alt.X('Milestone:N', sort=m_labels, title="Milestone", axis=alt.Axis(grid=True, domain=True)),
+                            y=alt.Y('GraphPosition:Q', scale=alt.Scale(domain=[1, 33]), title="Track Position (Top is Lead)", axis=alt.Axis(labels=False, ticks=False, grid=True, domain=True))
+                        )
+                        
+                        lines_pop = base_pop.mark_line(color="#ff4b4b").encode()
+                        points_pop = base_pop.mark_circle(size=60, color="#ff4b4b")
+                        labels_pop = base_pop.mark_text(align='left', dx=7, dy=-7, fontStyle='bold', fontSize=11).encode(text='RawDisplay:N')
+                        
+                        st.altair_chart((lines_pop + points_pop + labels_pop).properties(height=175), use_container_width=True)
                 with col2:
                     st.image(row['Car_Pic'])
 
