@@ -148,7 +148,7 @@ def get_base_drivers():
             "https://your-hosting-site.com/car-27.jpg", "https://your-hosting-site.com/car-11.jpg",
             "https://your-hosting-site.com/car-47.jpg", "https://your-hosting-site.com/car-15.jpg",
             "https://your-hosting-site.com/car-19.jpg", "https://your-hosting-site.com/car-51.jpg",
-            "https://your-hosting-site.com/car-77.jpg", "https://your-hosting-site.com/car-4.jpg",
+            "https://your-running-site.com/car-77.jpg", "https://your-hosting-site.com/car-4.jpg",
             "https://your-hosting-site.com/car-24.jpg"
         ]
     }
@@ -272,15 +272,14 @@ if selected_tab == "🏆 Standings":
                 x=alt.X('Milestone:N', sort=standings_milestones, title="Race Milestone", axis=alt.Axis(grid=True, domain=True, labelAngle=0)),
                 y=alt.Y('GraphPosition:Q', scale=alt.Scale(domain=[1, total_participants]), title="Pool Standing Rank (Top is 1st)", axis=alt.Axis(labels=False, ticks=False, grid=True, domain=True)),
                 color='Participant:N'
-            ).properties(
-                background='white' # Force white background on graph
             )
             
             lines_field = base_field.mark_line(strokeWidth=3).encode()
             points_field = base_field.mark_circle(size=60)
             labels_field = base_field.mark_text(align='left', dx=7, dy=-7, fontStyle='bold', fontSize=11).encode(text='RawDisplay:N')
             
-            chart_obj = (lines_field + points_field + labels_field).properties(width=800, height=320)
+            # Form properties cleanly on the combined object layer
+            chart_obj = (lines_field + points_field + labels_field).properties(width=800, height=320, background='white')
             
             # Render inside scrollable wrapper to prevent mobile clamping congestion
             st.markdown('<div class="scroll-container">', unsafe_allow_html=True)
@@ -475,15 +474,15 @@ elif selected_tab == "🏁 Live Field":
                     base = alt.Chart(single_driver_df).encode(
                         x=alt.X('Milestone:N', sort=m_labels, title="Milestone", axis=alt.Axis(grid=True, domain=True)),
                         y=alt.Y('GraphPosition:Q', scale=alt.Scale(domain=[1, 33]), title="Track Position (Top is Lead)", axis=alt.Axis(labels=False, ticks=False, grid=True, domain=True))
-                    ).properties(
-                        background='white'
                     )
                     
                     lines = base.mark_line(color="#ff4b4b").encode()
                     points = base.mark_circle(size=60, color="#ff4b4b")
                     labels = base.mark_text(align='left', dx=7, dy=-7, fontStyle='bold', fontSize=11).encode(text='RawDisplay:N')
                     
-                    st.altair_chart((lines + points + labels).properties(height=175), use_container_width=True)
+                    # Background dynamic layout call assigned cleanly here
+                    chart_render = (lines + points + labels).properties(height=175, background='white')
+                    st.altair_chart(chart_render, use_container_width=True)
             with col2:
                 st.image(row['Car_Pic'])
 
@@ -527,16 +526,15 @@ elif selected_tab == "📋 Roster View":
                 base_pool = alt.Chart(pool_chart_df).encode(
                     x=alt.X('Milestone:N', sort=standings_milestones, title="Race Milestone", axis=alt.Axis(grid=True, domain=True)),
                     y=alt.Y('GraphPosition:Q', scale=alt.Scale(domain=[1, total_participants]), title="Pool Standing Rank (Top is 1st)", axis=alt.Axis(labels=False, ticks=False, grid=True, domain=True))
-                ).properties(
-                    background='white'
                 )
                 
                 lines_pool = base_pool.mark_line(color="#1f77b4", strokeWidth=3).encode()
                 points_pool = base_pool.mark_circle(size=70, color="#1f77b4")
                 labels_pool = base_pool.mark_text(align='left', dx=8, dy=-8, fontStyle='bold', fontSize=12).encode(text='RawDisplay:N')
                 
-                st.altair_chart((lines_pool + points_pool + labels_pool).properties(height=160), use_container_width=True)
-                st.caption("ℹ nighttime curves mean you are leading the standings ladder.")
+                chart_render_pool = (lines_pool + points_pool + labels_pool).properties(height=160, background='white')
+                st.altair_chart(chart_render_pool, use_container_width=True)
+                st.caption("ℹ️ Upward trending lines mean you are climbing towards 1st place.")
         
         st.write("---")
         
@@ -563,15 +561,14 @@ elif selected_tab == "📋 Roster View":
                 x=alt.X('Milestone:N', sort=milestones, title="Race Milestone", axis=alt.Axis(grid=True, domain=True)),
                 y=alt.Y('GraphPosition:Q', scale=alt.Scale(domain=[1, 33]), title="Track Position Rank (Top is Lead)", axis=alt.Axis(labels=False, ticks=False, grid=True, domain=True)),
                 color='Driver:N'
-            ).properties(
-                background='white'
             )
             
             lines_multi = base_multi.mark_line().encode()
             points_multi = base_multi.mark_circle(size=50)
             labels_multi = base_multi.mark_text(align='left', dx=6, dy=-6, fontStyle='bold', fontSize=10).encode(text='RawDisplay:N')
             
-            st.altair_chart((lines_multi + points_multi + labels_multi).properties(height=380), use_container_width=True)
+            chart_render_multi = (lines_multi + points_multi + labels_multi).properties(height=380, background='white')
+            st.altair_chart(chart_render_multi, use_container_width=True)
             
         st.write("---")
         
@@ -624,15 +621,14 @@ elif selected_tab == "📊 Popular Picks":
                         base_pop = alt.Chart(single_driver_df).encode(
                             x=alt.X('Milestone:N', sort=m_labels, title="Milestone", axis=alt.Axis(grid=True, domain=True)),
                             y=alt.Y('GraphPosition:Q', scale=alt.Scale(domain=[1, 33]), title="Track Position (Top is Lead)", axis=alt.Axis(labels=False, ticks=False, grid=True, domain=True))
-                        ).properties(
-                            background='white'
                         )
                         
                         lines_pop = base_pop.mark_line(color="#ff4b4b").encode()
                         points_pop = base_pop.mark_circle(size=60, color="#ff4b4b")
                         labels_pop = base_pop.mark_text(align='left', dx=7, dy=-7, fontStyle='bold', fontSize=11).encode(text='RawDisplay:N')
                         
-                        st.altair_chart((lines_pop + points_pop + labels_pop).properties(height=175), use_container_width=True)
+                        chart_render_pop = (lines_pop + points_pop + labels_pop).properties(height=175, background='white')
+                        st.altair_chart(chart_render_pop, use_container_width=True)
                 with col2:
                     st.image(row['Car_Pic'])
 
