@@ -77,7 +77,7 @@ st.markdown("""
         font-weight: bold !important;
     }
     
-    /* Target images inside columns to center vertically and fit horizontally */
+    /* Target images inside containers/columns to center vertically and fit horizontally */
     [data-testid="stImage"] img {
         height: 100px !important;
         object-fit: contain !important;
@@ -480,7 +480,6 @@ with t5:
     if picks_df.empty:
         st.info("No picks drafted yet.")
     else:
-        # Build counting hashmap
         driver_pick_map = {driver: [] for driver in df['Driver'].tolist()}
         for _, row in picks_df.iterrows():
             p_name = row['Participant']
@@ -488,11 +487,8 @@ with t5:
                 if p in driver_pick_map:
                     driver_pick_map[p].append(p_name)
                     
-        # Match count values directly to master dataframe structure
         df_sorted = df.copy()
         df_sorted['Pick_Count'] = df_sorted['Driver'].map(lambda x: len(driver_pick_map[x]))
-        
-        # Priority 1: Most frequently picked. Priority 2: Standard track order fallback sync.
         df_sorted = df_sorted.sort_values(by=["Pick_Count", "Starting_Pos"], ascending=[False, True])
                     
         for _, row in df_sorted.iterrows():
@@ -567,87 +563,51 @@ with t3:
     
     for _, row in sorted_df.iterrows():
         with st.container(border=True):
-            # Check if user requested "Finishing Order" layout override
-            if sort_basis_label == "Finishing Order":
-                # Metric and Core Details
-                current_val = row[sort_by_col]
-                metric_label = f"P{current_val}" if current_val != 0 else "--"
-                st.metric("Final Position", metric_label)
-                st.subheader(row['Driver'])
-                st.caption(f"#{row['Car_Num']} | {row['Team']}")
-                
-                # REARRANGED: Car picture placed immediately below driver credentials
-                st.image(row['Car_Pic'])
-                
-                # REARRANGED: Explanation detailing performance metrics
-                pos_differential = int(row['Starting_Pos']) - int(row['Pos_Final'])
-                if current_val == 0:
-                    st.markdown(f"📋 Started from **P{row['Starting_Pos']}**, final finishing data pending.")
-                elif pos_differential > 0:
-                    st.markdown(f"📈 **Gained {pos_differential} places** during the race (Started: **P{row['Starting_Pos']}** ➡️ Finished: **P{row['Pos_Final']}**).")
-                elif pos_differential < 0:
-                    st.markdown(f"📉 **Lost {abs(pos_differential)} places** during the race (Started: **P{row['Starting_Pos']}** ➡️ Finished: **P{row['Pos_Final']}**).")
-                else:
-                    st.markdown(f"↔️ **Held position** exactly from grid to flag (Started: **P{row['Starting_Pos']}** ➡️ Finished: **P{row['Pos_Final']}**).")
-                
-                # REARRANGED: Graph rendered immediately below description
-                m_labels = ["Start", "Lap 100", "Lap 150", "Finish"]
-                m_vals = [row['Starting_Pos'], row['Pos_100'], row['Pos_150'], row['Pos_Final']]
-                
-                driver_history = []
-                for lbl, val in zip(m_labels, m_vals):
-                    if lbl == "Start" or val != 0:
-                        driver_history.append({"Milestone": lbl, "GraphPosition": 34 - val, "RawDisplay": f"P{val}"})
-                        
-                if len(driver_history) > 1:
-                    single_driver_df = pd.DataFrame(driver_history)
-                    base = alt.Chart(single_driver_df).encode(
-                        x=alt.X('Milestone:N', sort=m_labels, title="Milestone", axis=alt.Axis(grid=True, domain=True)),
-                        y=alt.Y('GraphPosition:Q', scale=alt.Scale(domain=[1, 33]), title="Rank", axis=alt.Axis(labels=False, ticks=False, grid=True, domain=True))
-                    )
-                    lines = base.mark_line(color="#ff4b4b").encode()
-                    points = base.mark_circle(size=60, color="#ff4b4b")
-                    labels = base.mark_text(align='left', dx=7, dy=-7, fontStyle='bold', fontSize=11, color='black').encode(text='RawDisplay:N')
-                    
-                    chart_render = (lines + points + labels).properties(height=175, background='white').configure_axis(
-                        labelColor='black', titleColor='black'
-                    )
-                    st.altair_chart(chart_render, use_container_width=True)
+            # Universal vertical alignment for ALL milestone choice options
+            current_val = row[sort_by_col]
+            metric_label = f"P{current_val}" if current_val != 0 else "--"
+            st.metric(f"{sort_basis_label} Position", metric_label)
+            st.subheader(row['Driver'])
+            st.caption(f"#{row['Car_Num']} | {row['Team']}")
             
+            # 1. Car picture immediately below driver details
+            st.image(row['Car_Pic'])
+            
+            # 2. Dynamic status explanation layout block 
+            pos_differential = int(row['Starting_Pos']) - int(row[sort_by_col])
+            
+            if current_val == 0:
+                st.markdown(f"📋 Started from **P{row['Starting_Pos']}**, telemetry data pending at this milestone tier.")
+            elif pos_differential > 0:
+                st.markdown(f"📈 **Gained {pos_differential} places** (Started: **P{row['Starting_Pos']}** ➡️ Currently/Finished: **P{row[sort_by_col]}**).")
+            elif pos_differential < 0:
+                st.markdown(f"📉 **Lost {abs(pos_differential)} places** (Started: **P{row['Starting_Pos']}** ➡️ Currently/Finished: **P{row[sort_by_col]}**).")
             else:
-                # Fallback standard dual-column arrangement for layout modes besides Finishing Order
-                col1, col2 = st.columns([4.0, 4.0])
-                with col1:
-                    current_val = row[sort_by_col]
-                    metric_label = f"P{current_val}" if current_val != 0 else "--"
-                    st.metric("Current Order", metric_label)
-                    st.subheader(row['Driver'])
-                    st.caption(f"#{row['Car_Num']} | {row['Team']}")
+                st.markdown(f"↔️ **Held position** exactly from green flag (Started: **P{row['Starting_Pos']}** ➡️ Currently/Finished: **P{row[sort_by_col]}**).")
+            
+            # 3. Progression map line graph matching description sequence
+            m_labels = ["Start", "Lap 100", "Lap 150", "Finish"]
+            m_vals = [row['Starting_Pos'], row['Pos_100'], row['Pos_150'], row['Pos_Final']]
+            
+            driver_history = []
+            for lbl, val in zip(m_labels, m_vals):
+                if lbl == "Start" or val != 0:
+                    driver_history.append({"Milestone": lbl, "GraphPosition": 34 - val, "RawDisplay": f"P{val}"})
                     
-                    m_labels = ["Start", "Lap 100", "Lap 150", "Finish"]
-                    m_vals = [row['Starting_Pos'], row['Pos_100'], row['Pos_150'], row['Pos_Final']]
-                    
-                    driver_history = []
-                    for lbl, val in zip(m_labels, m_vals):
-                        if lbl == "Start" or val != 0:
-                            driver_history.append({"Milestone": lbl, "GraphPosition": 34 - val, "RawDisplay": f"P{val}"})
-                            
-                    if len(driver_history) > 1:
-                        single_driver_df = pd.DataFrame(driver_history)
-                        base = alt.Chart(single_driver_df).encode(
-                            x=alt.X('Milestone:N', sort=m_labels, title="Milestone", axis=alt.Axis(grid=True, domain=True)),
-                            y=alt.Y('GraphPosition:Q', scale=alt.Scale(domain=[1, 33]), title="Rank", axis=alt.Axis(labels=False, ticks=False, grid=True, domain=True))
-                        )
-                        lines = base.mark_line(color="#ff4b4b").encode()
-                        points = base.mark_circle(size=60, color="#ff4b4b")
-                        labels = base.mark_text(align='left', dx=7, dy=-7, fontStyle='bold', fontSize=11, color='black').encode(text='RawDisplay:N')
-                        
-                        chart_render = (lines + points + labels).properties(height=175, background='white').configure_axis(
-                            labelColor='black', titleColor='black'
-                        )
-                        st.altair_chart(chart_render, use_container_width=True)
-                with col2:
-                    st.image(row['Car_Pic'])
+            if len(driver_history) > 1:
+                single_driver_df = pd.DataFrame(driver_history)
+                base = alt.Chart(single_driver_df).encode(
+                    x=alt.X('Milestone:N', sort=m_labels, title="Milestone", axis=alt.Axis(grid=True, domain=True)),
+                    y=alt.Y('GraphPosition:Q', scale=alt.Scale(domain=[1, 33]), title="Rank", axis=alt.Axis(labels=False, ticks=False, grid=True, domain=True))
+                )
+                lines = base.mark_line(color="#ff4b4b").encode()
+                points = base.mark_circle(size=60, color="#ff4b4b")
+                labels = base.mark_text(align='left', dx=7, dy=-7, fontStyle='bold', fontSize=11, color='black').encode(text='RawDisplay:N')
+                
+                chart_render = (lines + points + labels).properties(height=175, background='white').configure_axis(
+                    labelColor='black', titleColor='black'
+                )
+                st.altair_chart(chart_render, use_container_width=True)
 
     st.write("---")
     with st.expander("🛠️ Live Race Timing Tower Management (Input Milestone Positions Here)"):
@@ -681,7 +641,7 @@ with t3:
             st.success("Race placement logs updated globally!")
             st.rerun()
 
-# --- VIEW 1: MASTER SCOREBOARD STANDINGS ---
+# --- VIEW 1: MASTER SCOREBOARD STANDINGS (Restored Version) ---
 with t1:
     st.header("Live Pool Standings")
     master_standings = calculate_master_standings()
@@ -689,6 +649,7 @@ with t1:
     if master_standings.empty:
         st.info("No pool participant entries available to calculate score metrics.")
     else:
+        # Determine current active tracking tier based on data entries
         if not (df['Pos_Final'] == 0).all():
             active_sort = "Final Pts"
             rank_col = "Final Place"
@@ -701,6 +662,49 @@ with t1:
         else:
             active_sort = "Starting Pts"
             rank_col = "Start Place"
+            
+        total_participants = len(master_standings)
+        
+        # Build comprehensive multi-line progression grid tracking for the pool standings
+        standings_milestones = ["Start", "Lap 100", "Lap 150", "Finish"]
+        standings_chart_records = []
+        
+        for _, row in master_standings.iterrows():
+            places = [row['Start Place'], row['100L Place'], row['150L Place'], row['Final Place']]
+            for m_lbl, place_val in zip(standings_milestones, places):
+                if m_lbl == "Start" or place_val != 0:
+                    graph_coord = (total_participants + 1) - place_val
+                    standings_chart_records.append({
+                        "Milestone": m_lbl,
+                        "GraphPosition": graph_coord,
+                        "RawDisplay": f"#{place_val}",
+                        "Pool Participant": row['Name']
+                    })
+                    
+        if standings_chart_records:
+            standings_chart_df = pd.DataFrame(standings_chart_records)
+            
+            base_standings = alt.Chart(standings_chart_df).encode(
+                x=alt.X('Milestone:N', sort=standings_milestones, title="Race Milestone", axis=alt.Axis(grid=True, domain=True)),
+                y=alt.Y(
+                    'GraphPosition:Q', 
+                    scale=alt.Scale(domain=[1, total_participants]), 
+                    title="Rank Location", 
+                    axis=alt.Axis(grid=True, domain=True, labels=False, ticks=False)
+                ),
+                color=alt.Color('Pool Participant:N', legend=alt.Legend(orient='bottom', direction='horizontal', titleColor='black', labelColor='black'))
+            )
+            
+            lines_st = base_standings.mark_line(strokeWidth=3).encode()
+            points_st = base_standings.mark_circle(size=65)
+            labels_st = base_standings.mark_text(align='left', dx=7, dy=-7, fontStyle='bold', fontSize=11, color='black').encode(text='RawDisplay:N')
+            
+            chart_render_st = (lines_st + points_st + labels_st).properties(height=320, background='white').configure_axis(
+                labelColor='black', titleColor='black'
+            )
+            st.altair_chart(chart_render_st, use_container_width=True)
+            st.caption("ℹ️ Upward trending lines mean you are climbing towards 1st place.")
+            st.write("---")
             
         display_scoreboard = master_standings.sort_values(by=active_sort, ascending=True).copy()
         
