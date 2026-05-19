@@ -33,39 +33,38 @@ st.markdown("""
         -webkit-text-fill-color: #000000 !important;
     }
 
-    /* 2. COMPLETELY RESET SEGMENTED CONTROL WRAPPERS TO PREVENT SYSTEM BLACKOUTS */
+    /* 2. COMPLETELY RESET SEGMENTED CONTROL WRAPPERS */
     div[data-testid="stSegmentedControl"] {
         background-color: #f1f1f1 !important;
         padding: 6px;
         border-radius: 8px;
     }
 
-    /* --- DEEP INJECTION FOR UNSELECTED TABS (KILL MOBILE BLACKOUT) --- */
+    /* --- UNSELECTED TABS (FORCE TEXT WHITE FOR MOBILE BLACKOUTS) --- */
     div[data-testid="stSegmentedControl"] button,
     div[data-testid="stSegmentedControl"] [data-baseweb="button"],
     div[data-testid="stSegmentedControl"] button[aria-checked="false"] {
-        background-color: #ffffff !important;
-        background: #ffffff !important;
         border: 2px solid #d3d3d3 !important;
-        color: #ff0000 !important;
     }
 
-    /* Absolute force text strings and span tags out of black state */
+    /* Aggressive blanket override to force all text tags inside unselected tabs to white */
+    div[data-testid="stSegmentedControl"] button[aria-checked="false"] *,
     div[data-testid="stSegmentedControl"] button[aria-checked="false"] p,
     div[data-testid="stSegmentedControl"] button[aria-checked="false"] span,
     div[data-testid="stSegmentedControl"] button[aria-checked="false"] label,
-    div[data-testid="stSegmentedControl"] button div {
-        color: #ff0000 !important;
-        -webkit-text-fill-color: #ff0000 !important;
+    div[data-testid="stSegmentedControl"] button[aria-checked="false"] div {
+        color: #ffffff !important;
+        -webkit-text-fill-color: #ffffff !important;
         font-weight: 600 !important;
     }
 
-    /* --- SELECTED TABS --- */
+    /* --- SELECTED TABS (STAYS RED BACKGROUND WITH WHITE TEXT) --- */
     div[data-testid="stSegmentedControl"] button[aria-checked="true"] {
         background-color: #ff0000 !important;
         background: #ff0000 !important;
         border: 2px solid #cc0000 !important;
     }
+    div[data-testid="stSegmentedControl"] button[aria-checked="true"] *,
     div[data-testid="stSegmentedControl"] button[aria-checked="true"] p,
     div[data-testid="stSegmentedControl"] button[aria-checked="true"] span,
     div[data-testid="stSegmentedControl"] button[aria-checked="true"] label {
@@ -594,7 +593,6 @@ elif selected_tab == "📋 Roster View":
             
             base_multi = alt.Chart(chart_df).encode(
                 x=alt.X('Milestone:N', sort=milestones, title="Race Milestone", axis=alt.Axis(grid=True, domain=True)),
-                # Force precise structural intervals for every 5 ranks on track layout
                 y=alt.Y(
                     'GraphPosition:Q', 
                     scale=alt.Scale(domain=[1, 33]), 
@@ -614,7 +612,6 @@ elif selected_tab == "📋 Roster View":
             points_multi = base_multi.mark_circle(size=55)
             labels_multi = base_multi.mark_text(align='left', dx=6, dy=-6, fontStyle='bold', fontSize=10, color='black').encode(text='RawDisplay:N')
             
-            # Explicit height padding block ensures web view keeps full shape scope
             chart_render_multi = (lines_multi + points_multi + labels_multi).properties(
                 height=520, 
                 background='white'
