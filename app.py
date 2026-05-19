@@ -150,7 +150,7 @@ def calculate_master_standings():
 
         leaderboard_data.append({
             "Name": row['Participant'],
-            "Start Pts": int(score_start),
+            "Starting Pts": int(score_start), # Fixed column label directly here
             "100L Pts": int(score_100),
             "150L Pts": int(score_150),
             "Final Pts": int(score_final)
@@ -159,7 +159,7 @@ def calculate_master_standings():
     master_df = pd.DataFrame(leaderboard_data)
     
     # Explicitly calculate placing sequences dynamically across intervals
-    master_df = master_df.sort_values(by="Start Pts", ascending=True)
+    master_df = master_df.sort_values(by="Starting Pts", ascending=True)
     master_df["Start Place"] = range(1, len(master_df) + 1)
     
     if not (df['Pos_100'] == 0).all():
@@ -205,9 +205,8 @@ if selected_tab == "🏆 Standings":
         # Format layout ordering and sorting
         column_order = [
             "Final Place", "100L Place", "150L Place", "Name", 
-            "Final Pts", "100L Pts", "150L Pts", "Start Pts"
+            "Final Pts", "100L Pts", "150L Pts", "Starting Pts"
         ]
-        master_df = master_df.rename(columns={"Start Pts": "Starting Pts"})
         master_df = master_df[column_order].sort_values(by=["Final Place", "Name"])
 
         st.dataframe(
@@ -419,7 +418,7 @@ elif selected_tab == "📋 Roster View":
         sort_basis = "Pos_Final" if df["Pos_Final"].sum() == 561 else ("Pos_150" if df["Pos_150"].sum() == 561 else ("Pos_100" if df["Pos_100"].sum() == 561 else "Starting_Pos"))
         u_df = df[df['Driver'].isin(u_picks)].sort_values(by=sort_basis)
         
-        # --- NEW: PARTICIPANT OVERALL STANDINGS PLACE GRAPH ---
+        # --- PARTICIPANT OVERALL STANDINGS PLACE GRAPH ---
         st.subheader("Your Pool Standings Progress Tracker")
         master_standings = calculate_master_standings()
         
@@ -428,13 +427,11 @@ elif selected_tab == "📋 Roster View":
             total_participants = len(master_standings)
             
             standings_milestones = ["Start", "Lap 100", "Lap 150", "Finish"]
-            # Map tracking points; if a race segment hasn't been completed yet, exclude it cleanly
             standings_places = [p_history['Start Place'], p_history['100L Place'], p_history['150L Place'], p_history['Final Place']]
             
             pool_chart_records = []
             for m_lbl, place_val in zip(standings_milestones, standings_places):
                 if m_lbl == "Start" or place_val != 0:
-                    # Invert graph coordinates mathematically to map Place 1 to the upper visual ceiling boundary
                     graph_coord = (total_participants + 1) - place_val
                     pool_chart_records.append({
                         "Milestone": m_lbl,
