@@ -563,7 +563,6 @@ with t3:
     
     for _, row in sorted_df.iterrows():
         with st.container(border=True):
-            # Universal vertical alignment for ALL milestone choice options
             current_val = row[sort_by_col]
             metric_label = f"P{current_val}" if current_val != 0 else "--"
             st.metric(f"{sort_basis_label} Position", metric_label)
@@ -574,16 +573,26 @@ with t3:
             st.image(row['Car_Pic'])
             
             # 2. Dynamic status explanation layout block 
-            pos_differential = int(row['Starting_Pos']) - int(row[sort_by_col])
-            
-            if current_val == 0:
-                st.markdown(f"📋 Started from **P{row['Starting_Pos']}**, telemetry data pending at this milestone tier.")
-            elif pos_differential > 0:
-                st.markdown(f"📈 **Gained {pos_differential} places** (Started: **P{row['Starting_Pos']}** ➡️ Currently/Finished: **P{row[sort_by_col]}**).")
-            elif pos_differential < 0:
-                st.markdown(f"📉 **Lost {abs(pos_differential)} places** (Started: **P{row['Starting_Pos']}** ➡️ Currently/Finished: **P{row[sort_by_col]}**).")
+            if sort_basis_label == "Starting Order":
+                # For Starting Order, completely hide the +/- gaining/losing text
+                st.markdown(f"🏁 Starting from **P{row['Starting_Pos']}**")
             else:
-                st.markdown(f"↔️ **Held position** exactly from green flag (Started: **P{row['Starting_Pos']}** ➡️ Currently/Finished: **P{row[sort_by_col]}**).")
+                pos_differential = int(row['Starting_Pos']) - int(row[sort_by_col])
+                
+                # Determine the exact phrasing based on the tab selected
+                if sort_basis_label in ["Running Order @ Lap 100", "Running Order @ Lap 150"]:
+                    status_text = f"(Start Position: **P{row['Starting_Pos']}** ➡️ Current Position: **P{row[sort_by_col]}**)"
+                else: # Finishing Order
+                    status_text = f"(Start Position: **P{row['Starting_Pos']}** ➡️ Finished: **P{row[sort_by_col]}**)"
+                
+                if current_val == 0:
+                    st.markdown(f"📋 Started from **P{row['Starting_Pos']}**, telemetry data pending at this milestone tier.")
+                elif pos_differential > 0:
+                    st.markdown(f"📈 **Gained {pos_differential} places** {status_text}.")
+                elif pos_differential < 0:
+                    st.markdown(f"📉 **Lost {abs(pos_differential)} places** {status_text}.")
+                else:
+                    st.markdown(f"↔️ **Held position** exactly from green flag {status_text}.")
             
             # 3. Progression map line graph matching description sequence
             m_labels = ["Start", "Lap 100", "Lap 150", "Finish"]
