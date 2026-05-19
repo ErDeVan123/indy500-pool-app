@@ -168,8 +168,10 @@ def get_base_drivers():
             "Yes","Yes","Yes","Yes","Yes","Yes","Yes","Yes","Yes","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No","No"
         ],
         "Car_Pic": [
-            "https://your-hosting-site.com/car-10.jpg", "https://your-hosting-site.com/car-20.jpg",
-            "https://your-hosting-site.com/car-12.jpg", "https://your-hosting-site.com/car-60.jpg",
+            "https://www.indycar.com/-/media/IndyCar/Cars/2026/IndyCar-Series/Liveries/Indy500/10-DHL-SS.png?dp=05-11-2026T06:02PM", 
+            "https://www.indycar.com/-/media/IndyCar/Cars/2026/IndyCar-Series/Liveries/Indy500/20-JavaHouse-SS.png?dp=05-11-2026T06:03PM",
+            "https://www.indycar.com/-/media/IndyCar/Cars/2026/IndyCar-Series/Liveries/Indy500/12-Verizon-SS.png?dp=05-11-2026T06:02PM", 
+            "https://your-hosting-site.com/car-60.jpg",
             "https://your-hosting-site.com/car-14.jpg", "https://your-hosting-site.com/car-5.jpg",
             "https://your-hosting-site.com/car-8.jpg", "https://your-hosting-site.com/car-23.jpg",
             "https://your-hosting-site.com/car-3.jpg", "https://your-hosting-site.com/car-9.jpg",
@@ -206,10 +208,10 @@ def load_race_positions():
 df = load_race_positions()
 
 # 3. Synchronize Participant CSV Database
-PICKS_FILE = "picks.csv"
+PICK_FILE = "picks.csv"
 def load_picks():
-    if os.path.exists(PICKS_FILE):
-        return pd.read_csv(PICKS_FILE)
+    if os.path.exists(PICK_FILE):
+        return pd.read_csv(PICK_FILE)
     return pd.DataFrame(columns=["Participant", "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8"])
 
 picks_df = load_picks()
@@ -399,7 +401,7 @@ with t2:
             "P5": current_picks[4], "P6": current_picks[5], "P7": current_picks[6], "P8": current_picks[7]
         }])
         updated_df = pd.concat([picks_df, new_entry], ignore_index=True)
-        updated_df.to_csv(PICKS_FILE, index=False)
+        updated_df.to_csv(PICK_FILE, index=False)
         
         st.session_state["selected_pool"] = []
         st.rerun()
@@ -717,6 +719,6 @@ with st.expander("🛠️ Admin Command Deck (Edit / Delete Entry Controls)"):
         
         if st.button("Permanently Delete Roster", type="primary"):
             updated_picks = picks_df[picks_df['Participant'] != delete_target]
-            updated_picks.to_csv(PICKS_FILE, index=False)
+            updated_picks.to_csv(PICK_FILE, index=False)
             st.success(f"Successfully erased profile data for: {delete_target}")
             st.rerun()
