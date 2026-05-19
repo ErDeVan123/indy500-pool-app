@@ -33,41 +33,45 @@ st.markdown("""
         -webkit-text-fill-color: #000000 !important;
     }
 
-    /* 2. COMPLETELY RESET SEGMENTED CONTROL WRAPPERS */
-    div[data-testid="stSegmentedControl"] {
+    /* --- NATIVE ST.TABS STYLING OVERRIDES --- */
+    /* Target the overall tab container bar */
+    div[data-testid="stTabs"] {
         background-color: #f1f1f1 !important;
-        padding: 6px;
-        border-radius: 8px;
+        padding: 4px 4px 0px 4px;
+        border-radius: 8px 8px 0 0;
+        border-bottom: 2px solid #ff0000 !important;
     }
 
-    /* --- UNSELECTED TABS (FORCE TEXT WHITE FOR MOBILE BLACKOUTS) --- */
-    div[data-testid="stSegmentedControl"] button,
-    div[data-testid="stSegmentedControl"] [data-baseweb="button"],
-    div[data-testid="stSegmentedControl"] button[aria-checked="false"] {
-        border: 2px solid #d3d3d3 !important;
-    }
-
-    /* Aggressive blanket override to force all text tags inside unselected tabs to white */
-    div[data-testid="stSegmentedControl"] button[aria-checked="false"] *,
-    div[data-testid="stSegmentedControl"] button[aria-checked="false"] p,
-    div[data-testid="stSegmentedControl"] button[aria-checked="false"] span,
-    div[data-testid="stSegmentedControl"] button[aria-checked="false"] label,
-    div[data-testid="stSegmentedControl"] button[aria-checked="false"] div {
-        color: #ffffff !important;
-        -webkit-text-fill-color: #ffffff !important;
+    /* Base styling for ALL tabs (unselected state) */
+    div[data-testid="stTabs"] button {
+        background-color: #e0e0e0 !important;
+        color: #333333 !important;
+        border: 1px solid #d3d3d3 !important;
+        border-bottom: none !important;
+        margin-right: 4px;
+        border-radius: 6px 6px 0 0;
+        padding: 8px 16px !important;
         font-weight: 600 !important;
     }
 
-    /* --- SELECTED TABS (STAYS RED BACKGROUND WITH WHITE TEXT) --- */
-    div[data-testid="stSegmentedControl"] button[aria-checked="true"] {
+    /* High-intensity override to guarantee unselected text color visibility */
+    div[data-testid="stTabs"] button p,
+    div[data-testid="stTabs"] button span {
+        color: #333333 !important;
+        -webkit-text-fill-color: #333333 !important;
+    }
+
+    /* Active/Selected Tab styling (Stays Red background with White text) */
+    div[data-testid="stTabs"] button[aria-selected="true"] {
         background-color: #ff0000 !important;
         background: #ff0000 !important;
-        border: 2px solid #cc0000 !important;
+        color: #ffffff !important;
+        border: 1px solid #cc0000 !important;
+        border-bottom: none !important;
     }
-    div[data-testid="stSegmentedControl"] button[aria-checked="true"] *,
-    div[data-testid="stSegmentedControl"] button[aria-checked="true"] p,
-    div[data-testid="stSegmentedControl"] button[aria-checked="true"] span,
-    div[data-testid="stSegmentedControl"] button[aria-checked="true"] label {
+
+    div[data-testid="stTabs"] button[aria-selected="true"] p,
+    div[data-testid="stTabs"] button[aria-selected="true"] span {
         color: #ffffff !important;
         -webkit-text-fill-color: #ffffff !important;
         font-weight: bold !important;
@@ -172,7 +176,7 @@ def get_base_drivers():
             "https://your-hosting-site.com/car-76.jpg", "https://your-hosting-site.com/car-75.jpg",
             "https://your-hosting-site.com/car-33.jpg", "https://your-hosting-site.com/car-6.jpg",
             "https://your-hosting-site.com/car-21.jpg", "https://your-hosting-site.com/car-66.jpg",
-            "https://your-hosting-site.com/car-28.jpg", "https://your-hosting-site.com/car-7.jpg",
+            "https://your-running-site.com/car-28.jpg", "https://your-hosting-site.com/car-7.jpg",
             "https://your-hosting-site.com/car-26.jpg", "https://your-hosting-site.com/car-6b.jpg",
             "https://your-running-site.com/car-45.jpg", "https://your-hosting-site.com/car-31.jpg",
             "https://your-running-site.com/car-2.jpg",  "https://your-hosting-site.com/car-18.jpg",
@@ -258,23 +262,15 @@ def calculate_master_standings():
         
     return master_df
 
-# 4. Navigation Layout
-tab_options = ["🏆 Standings", "📝 Visual Draft Board", "🏁 Live Field", "📋 Roster View", "📊 Popular Picks"]
-
-selected_tab = st.segmented_control(
-    "Navigation Menu", 
-    options=tab_options, 
-    default="🏆 Standings",
-    label_visibility="collapsed"
-)
-
-st.write("---")
+# 4. Navigation Layout using native st.tabs
+tab_names = ["🏆 Standings", "📝 Visual Draft Board", "🏁 Live Field", "📋 Roster View", "📊 Popular Picks"]
+t1, t2, t3, t4, t5 = st.tabs(tab_names)
 
 # --- VIEW 1: OVERALL STANDINGS ---
-if selected_tab == "🏆 Standings":
+with t1:
     st.header("Overall Standings")
     if picks_df.empty:
-        st.info("No pool sheets logged yet. Select the 'Visual Draft Board' menu above to add yours!")
+        st.info("No pool sheets logged yet. Select the 'Visual Draft Board' tab above to add yours!")
     else:
         master_df = calculate_master_standings()
         
@@ -336,7 +332,7 @@ if selected_tab == "🏆 Standings":
         )
 
 # --- VIEW 2: HARD-VALIDATED DRAFT BOARD ---
-elif selected_tab == "📝 Visual Draft Board":
+with t2:
     st.header("Interactive Draft Field")
     st.markdown("Select exactly **8 drivers**. Maximum **3 from Rows 1-3**.")
     
@@ -412,23 +408,22 @@ elif selected_tab == "📝 Visual Draft Board":
         st.rerun()
 
 # --- VIEW 3: LIVE FIELD RUNNING ORDER ---
-elif selected_tab == "🏁 Live Field":
+with t3:
     st.header("Actual Indy 500 Running Order")
     
-    milestone_options = ["Start", "Lap 100", "Lap 150", "Finish"]
-    selected_milestone = st.segmented_control(
+    # Simple light-mode selectbox replacement for sub-tabs to protect text visibility
+    sort_basis_label = st.selectbox(
         "Display Sort Metric:",
-        options=milestone_options,
-        default="Start"
+        options=["Official Initial Grid Ranks", "Running Order @ Lap 100", "Running Order @ Lap 150", "Final Track Finishing Order"]
     )
     
-    if selected_milestone == "Lap 100":
+    if sort_basis_label == "Running Order @ Lap 100":
         sort_by_col = "Pos_100"
         display_title = "Running Order @ Lap 100"
-    elif selected_milestone == "Lap 150":
+    elif sort_basis_label == "Running Order @ Lap 150":
         sort_by_col = "Pos_150"
         display_title = "Running Order @ Lap 150"
-    elif selected_milestone == "Finish":
+    elif sort_basis_label == "Final Track Finishing Order":
         sort_by_col = "Pos_Final"
         display_title = "Final Track Finishing Order"
     else:
@@ -519,7 +514,7 @@ elif selected_tab == "🏁 Live Field":
                 st.image(row['Car_Pic'])
 
 # --- VIEW 4: ROSTER VIEW ---
-elif selected_tab == "📋 Roster View":
+with t4:
     st.header("Roster Inspection Profiles")
     if picks_df.empty:
         st.info("No active rosters submitted.")
@@ -572,7 +567,7 @@ elif selected_tab == "📋 Roster View":
         
         st.write("---")
         
-        # --- ROSTER WIDE MULTI-DRIVER LINE GRAPH (FIXED STRETCH & AXIS HEIGHT) ---
+        # --- ROSTER WIDE MULTI-DRIVER LINE GRAPH ---
         st.subheader("Lineup Milestone Progression Tracker")
         chart_records = []
         milestones = ["Start", "Lap 100", "Lap 150", "Finish"]
@@ -631,7 +626,7 @@ elif selected_tab == "📋 Roster View":
                     st.image(row['Car_Pic'])
 
 # --- VIEW 5: POPULAR PICKS METRICS ---
-elif selected_tab == "📊 Popular Picks":
+with t5:
     st.header("Participant Pick Summary")
     if picks_df.empty:
         st.info("No picks drafted yet.")
