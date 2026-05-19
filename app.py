@@ -180,17 +180,27 @@ def get_base_drivers():
             "https://www.indycar.com/-/media/IndyCar/Cars/2026/IndyCar-Series/Liveries/Indy500/9-PNCBank-SS.png?dp=05-11-2026T06:02PM",
             "https://www.indycar.com/-/media/IndyCar/Cars/2026/IndyCar-Series/Liveries/Indy500/76-Wedbush-SS.png?dp=05-11-2026T06:05PM", 
             "https://www.indycar.com/-/media/IndyCar/Cars/2026/IndyCar-Series/Liveries/Indy500/75-Amada-SS.png?dp=05-11-2026T06:05PM",
-            "https://your-hosting-site.com/car-33.jpg", "https://your-hosting-site.com/car-6.jpg",
-            "https://your-running-site.com/car-21.jpg", "https://your-hosting-site.com/car-66.jpg",
-            "https://your-running-site.com/car-28.jpg", "https://your-hosting-site.com/car-7.jpg",
-            "https://your-hosting-site.com/car-26.jpg", "https://your-hosting-site.com/car-6b.jpg",
-            "https://your-running-site.com/car-45.jpg", "https://your-hosting-site.com/car-31.jpg",
-            "https://your-running-site.com/car-2.jpg",  "https://your-hosting-site.com/car-18.jpg",
-            "https://your-hosting-site.com/car-27.jpg", "https://your-hosting-site.com/car-11.jpg",
-            "https://your-hosting-site.com/car-47.jpg", "https://your-hosting-site.com/car-15.jpg",
-            "https://your-hosting-site.com/car-19.jpg", "https://your-hosting-site.com/car-51.jpg",
-            "https://your-running-site.com/car-77.jpg", "https://your-hosting-site.com/car-4.jpg",
-            "https://your-hosting-site.com/car-24.jpg"
+            "https://www.indycar.com/-/media/IndyCar/Cars/2026/IndyCar-Series/Liveries/Indy500/33-Slimfast-SS.png?dp=05-10-2026T01:02AM", 
+            "https://www.indycar.com/-/media/IndyCar/Cars/2026/IndyCar-Series/Liveries/Indy500/06-Cliffs-SS.png?dp=05-10-2026T01:02AM",
+            "https://www.indycar.com/-/media/IndyCar/Cars/2026/IndyCar-Series/Liveries/Indy500/21-Splenda-SS.png?dp=05-11-2026T06:03PM", 
+            "https://www.indycar.com/-/media/IndyCar/Cars/2026/IndyCar-Series/Liveries/Indy500/66-ACURA-SS.png?dp=05-11-2026T06:05PM",
+            "https://www.indycar.com/-/media/IndyCar/Cars/2026/IndyCar-Series/Liveries/Indy500/28-Phoenix-SS.png?dp=05-11-2026T06:04PM", 
+            "https://www.indycar.com/-/media/IndyCar/Cars/2026/IndyCar-Series/Liveries/Indy500/7-Velo-SS.png?dp=05-11-2026T06:02PM",
+            "https://www.indycar.com/-/media/IndyCar/Cars/2026/IndyCar-Series/Liveries/Indy500/26-TWGAI-SS.png?dp=05-11-2026T06:03PM", 
+            "https://www.indycar.com/-/media/IndyCar/Cars/2026/IndyCar-Series/Liveries/Indy500/6-NTTDATA-SS.png?dp=05-15-2026T03:15PM",
+            "https://www.indycar.com/-/media/IndyCar/Cars/2026/IndyCar-Series/Liveries/Indy500/45-Droplight-SS.png?dp=05-11-2026T06:04PM", 
+            "https://www.indycar.com/-/media/IndyCar/Cars/2026/IndyCar-Series/Liveries/Indy500/31-PrizePicks-SS.png?dp=05-11-2026T06:04PM",
+            "https://www.indycar.com/-/media/IndyCar/Cars/2026/IndyCar-Series/Liveries/Indy500/2-Shell-SS.png?dp=05-11-2026T06:01PM",  
+            "https://www.indycar.com/-/media/IndyCar/Cars/2026/IndyCar-Series/Liveries/Indy500/18-BMAX-SS.png?dp=05-11-2026T10:01PM",
+            "https://www.indycar.com/-/media/IndyCar/Cars/2026/IndyCar-Series/Liveries/Indy500/27-SamsClub-SS.png?dp=05-11-2026T06:04PM", 
+            "https://www.indycar.com/-/media/IndyCar/Cars/2026/IndyCar-Series/Liveries/Indy500/11-elf-SS.png?dp=05-10-2026T01:02AM",
+            "https://www.indycar.com/-/media/IndyCar/Cars/2026/IndyCar-Series/Liveries/Indy500/47-ENVE-SS.png?dp=05-11-2026T06:04PM", 
+            "https://www.indycar.com/-/media/IndyCar/Cars/2026/IndyCar-Series/Liveries/Indy500/15-UnitedRentals-SS.png?dp=05-11-2026T07:42PM",
+            "https://www.indycar.com/-/media/IndyCar/Cars/2026/IndyCar-Series/Liveries/Indy500/19-Nammo-SS.png?dp=05-11-2026T07:42PM", 
+            "https://www.indycar.com/-/media/IndyCar/Cars/2026/IndyCar-Series/Liveries/Indy500/51-TexasRoadhouse-SS.png?dp=05-15-2026T02:06PM",
+            "https://www.indycar.com/-/media/IndyCar/Cars/2026/IndyCar-Series/Liveries/Indy500/77-Goodheart-SS.png?dp=05-11-2026T06:05PM", 
+            "https://www.indycar.com/-/media/IndyCar/Cars/2026/IndyCar-Series/Liveries/Indy500/4-Combitrans-SS.png?dp=05-11-2026T06:01PM",
+            "https://www.indycar.com/-/media/IndyCar/Cars/2026/IndyCar-Series/Liveries/Indy500/24-INVST-SS.png?dp=05-11-2026T06:03PM"
         ]
     }
     return pd.DataFrame(data)
@@ -628,7 +638,6 @@ with t4:
             with st.container(border=True):
                 col1, col2 = st.columns([4.0, 4.0])
                 with col1:
-                    # Using st.subheader() here enforces visual match with draft board profile sizes
                     st.subheader(row['Driver'])
                     st.caption(f"#{row['Car_Num']} | {row['Team']}")
                     st.caption(f"Start: P{row['Starting_Pos']} | Lap 100: P{row['Pos_100']} | Lap 150: P{row['Pos_150']} | Finish: P{row['Pos_Final']}")
