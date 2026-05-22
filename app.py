@@ -291,11 +291,41 @@ with t2:
     if "selected_pool" not in st.session_state:
         st.session_state["selected_pool"] = []
         
+    st.write("---")
+    
+    for idx, row in df.iterrows():
+        d_name = row['Driver']
+        is_selected = d_name in st.session_state["selected_pool"]
+        
+        with st.container(border=True):
+            col1, col2, col3 = st.columns([1.2, 2.8, 4.0])
+            with col1:
+                st.write(f"**Start Pos: {row['Starting_Pos']}**")
+                st.caption(f"⏱️ {row['Qual_Speed']}")
+                if row['Tier_1_3'] == "Yes":
+                    st.markdown("⭐ *Row 1-3*")
+            with col2:
+                st.subheader(d_name)
+                st.caption(f"#{row['Car_Num']} | {row['Team']}")
+                
+                box_label = "🟢 Selected" if is_selected else "Select Driver"
+                if st.checkbox(box_label, key=f"draft_check_{idx}", value=is_selected):
+                    if d_name not in st.session_state["selected_pool"]:
+                        st.session_state["selected_pool"].append(d_name)
+                        st.rerun()
+                else:
+                    if d_name in st.session_state["selected_pool"]:
+                        st.session_state["selected_pool"].remove(d_name)
+                        st.rerun()
+            with col3:
+                st.image(row['Car_Pic'])
+
+    st.write("---")
+    
     current_picks = st.session_state["selected_pool"]
     count_picked = len(current_picks)
     count_tier = df[df['Driver'].isin(current_picks) & (df['Tier_1_3'] == 'Yes')].shape[0]
     
-    # Live Trackers displayed gracefully up-front
     c1, c2 = st.columns(2)
     c1.metric("Drivers Picked (Must be 8)", f"{count_picked} / 8", delta=None if count_picked <= 8 else "Too Many!", delta_color="inverse")
     c2.metric("Top-Tier Rows 1-3 (Max 3)", f"{count_tier} / 3", delta=None if count_tier <= 3 else "Limit Exceeded!", delta_color="inverse")
@@ -323,39 +353,8 @@ with t2:
         updated_df = pd.concat([picks_df, new_entry], ignore_index=True)
         updated_df.to_csv(PICK_FILE, index=False)
         
-        st.success(f"Success! '{entry_name}' lineup was successfully locked in.")
         st.session_state["selected_pool"] = []
         st.rerun()
-        
-    st.write("---")
-    
-    # Interactive selection list below the form layouts
-    for idx, row in df.iterrows():
-        d_name = row['Driver']
-        is_selected = d_name in st.session_state["selected_pool"]
-        
-        with st.container(border=True):
-            col1, col2, col3 = st.columns([1.2, 2.8, 4.0])
-            with col1:
-                st.write(f"**Start Pos: {row['Starting_Pos']}**")
-                st.caption(f"⏱️ {row['Qual_Speed']}")
-                if row['Tier_1_3'] == "Yes":
-                    st.markdown("⭐ *Row 1-3*")
-            with col2:
-                st.subheader(d_name)
-                st.caption(f"#{row['Car_Num']} | {row['Team']}")
-                
-                box_label = "🟢 Selected" if is_selected else "Select Driver"
-                if st.checkbox(box_label, key=f"draft_check_{idx}", value=is_selected):
-                    if d_name not in st.session_state["selected_pool"]:
-                        st.session_state["selected_pool"].append(d_name)
-                        st.rerun()
-                else:
-                    if d_name in st.session_state["selected_pool"]:
-                        st.session_state["selected_pool"].remove(d_name)
-                        st.rerun()
-            with col3:
-                st.image(row['Car_Pic'])
 
 # --- VIEW 4: ROSTER VIEW ---
 with t4:
@@ -494,16 +493,16 @@ with t5:
                     
         for _, row in df_sorted.iterrows():
             d_name = row['Driver']
-            choose_p = driver_pick_map[d_name]
+            choosing_p = driver_pick_map[d_name]
             
             with st.container(border=True):
                 st.subheader(d_name)
-                st.caption(f"Car #{row['Car_Num']} | Start: P{row['Starting_Pos']} | Total Drafts: {len(choose_p)}")
+                st.caption(f"Car #{row['Car_Num']} | Start: P{row['Starting_Pos']} | Total Drafts: {len(choosing_p)}")
                 
                 st.image(row['Car_Pic'])
                 
-                if choose_p:
-                    st.markdown(f"**Drafted By:** {', '.join(choose_p)}")
+                if choosing_p:
+                    st.markdown(f"**Drafted By:** {', '.join(choosing_p)}")
                 else:
                     st.markdown("*Nobody has drafted this driver yet.*")
                     
@@ -575,13 +574,15 @@ with t3:
             
             # 2. Dynamic status explanation layout block 
             if sort_basis_label == "Starting Order":
+                # For Starting Order, completely hide the +/- gaining/losing text
                 st.markdown(f"🏁 Starting from **P{row['Starting_Pos']}**")
             else:
                 pos_differential = int(row['Starting_Pos']) - int(row[sort_by_col])
                 
+                # Determine the exact phrasing based on the tab selected
                 if sort_basis_label in ["Running Order @ Lap 100", "Running Order @ Lap 150"]:
                     status_text = f"(Start Position: **P{row['Starting_Pos']}** ➡️ Current Position: **P{row[sort_by_col]}**)"
-                else: 
+                else: # Finishing Order
                     status_text = f"(Start Position: **P{row['Starting_Pos']}** ➡️ Finished: **P{row[sort_by_col]}**)"
                 
                 if current_val == 0:
@@ -612,30 +613,70 @@ with t3:
                 points = base.mark_circle(size=60, color="#ff4b4b")
                 labels = base.mark_text(align='left', dx=7, dy=-7, fontStyle='bold', fontSize=11, color='black').encode(text='RawDisplay:N')
                 
-                chart_render = (lines + points + labels).properties(height=140, background='white').configure_axis(
+                chart_render = (lines + points + labels).properties(height=175, background='white').configure_axis(
                     labelColor='black', titleColor='black'
                 )
                 st.altair_chart(chart_render, use_container_width=True)
 
-# --- VIEW 1: STANDINGS ---
+    st.write("---")
+    with st.expander("🛠️ Live Race Timing Tower Management (Input Milestone Positions Here)"):
+        st.markdown("Select placement ranks via the dropdown boxes. Uncompleted points map safely to `0`.")
+        
+        position_dropdown_choices = list(range(34))
+        
+        updated_rows = []
+        for idx, row in df.sort_values(by="Starting_Pos").iterrows():
+            st.markdown(f"**#{row['Car_Num']} — {row['Driver']}**")
+            cc1, cc2, cc3 = st.columns(3)
+            
+            with cc1:
+                val_100 = st.selectbox(f"Lap 100 Rank", options=position_dropdown_choices, index=int(row['Pos_100']), key=f"t100_{idx}")
+            with cc2:
+                val_150 = st.selectbox(f"Lap 150 Rank", options=position_dropdown_choices, index=int(row['Pos_150']), key=f"t150_{idx}")
+            with cc3:
+                val_final = st.selectbox(f"Finish Rank", options=position_dropdown_choices, index=int(row['Pos_Final']), key=f"tfin_{idx}")
+                
+            updated_rows.append({
+                "Driver": row['Driver'],
+                "Pos_100": val_100,
+                "Pos_150": val_150,
+                "Pos_Final": val_final
+            })
+            st.write("---")
+            
+        if st.button("Save Control Tower Data Overwrites", type="primary"):
+            save_df = pd.DataFrame(updated_rows)
+            save_df.to_csv(POSITIONS_FILE, index=False)
+            st.success("Race placement logs updated globally!")
+            st.rerun()
+
+# --- VIEW 1: MASTER SCOREBOARD STANDINGS (Restored Version) ---
 with t1:
-    st.header("Standings Leaderboard")
+    st.header("Live Pool Standings")
     master_standings = calculate_master_standings()
+    
     if master_standings.empty:
-        st.info("No participants submitted to calculate leader standings.")
+        st.info("No pool participant entries available to calculate score metrics.")
     else:
-        st.dataframe(
-            master_standings[["Start Place", "Name", "Starting Pts", "100L Place", "100L Pts", "150L Place", "150L Pts", "Final Place", "Final Pts"]],
-            use_container_width=True,
-            hide_index=True
-        )
-        
-        st.write("---")
-        st.subheader("Pool Lineup Tracker")
-        
+        # Determine current active tracking tier based on data entries
+        if not (df['Pos_Final'] == 0).all():
+            active_sort = "Final Pts"
+            rank_col = "Final Place"
+        elif not (df['Pos_150'] == 0).all():
+            active_sort = "150L Pts"
+            rank_col = "150L Place"
+        elif not (df['Pos_100'] == 0).all():
+            active_sort = "100L Pts"
+            rank_col = "100L Place"
+        else:
+            active_sort = "Starting Pts"
+            rank_col = "Start Place"
+            
         total_participants = len(master_standings)
-        standings_chart_records = []
+        
+        # Build comprehensive multi-line progression grid tracking for the pool standings
         standings_milestones = ["Start", "Lap 100", "Lap 150", "Finish"]
+        standings_chart_records = []
         
         for _, row in master_standings.iterrows():
             places = [row['Start Place'], row['100L Place'], row['150L Place'], row['Final Place']]
@@ -643,28 +684,48 @@ with t1:
                 if m_lbl == "Start" or place_val != 0:
                     graph_coord = (total_participants + 1) - place_val
                     standings_chart_records.append({
-                        "Milestone": m_lbl, 
-                        "GraphPosition": graph_coord, 
+                        "Milestone": m_lbl,
+                        "GraphPosition": graph_coord,
                         "RawDisplay": f"#{place_val}",
                         "Pool Participant": row['Name']
                     })
-        
+                    
         if standings_chart_records:
             standings_chart_df = pd.DataFrame(standings_chart_records)
+            
             base_standings = alt.Chart(standings_chart_df).encode(
-                x=alt.X('Milestone:N', sort=standings_milestones, title="Race Milestone"),
-                y=alt.Y('GraphPosition:Q', title=None, axis=alt.Axis(labels=False, ticks=False)),
-                color=alt.Color('Pool Participant:N', legend=alt.Legend(orient='left', title="Participant"))
+                x=alt.X('Milestone:N', sort=standings_milestones, title="Race Milestone", axis=alt.Axis(grid=True, domain=True)),
+                y=alt.Y(
+                    'GraphPosition:Q', 
+                    scale=alt.Scale(domain=[1, total_participants]), 
+                    title="Rank Location", 
+                    axis=alt.Axis(grid=True, domain=True, labels=False, ticks=False)
+                ),
+                color=alt.Color('Pool Participant:N', legend=alt.Legend(orient='bottom', direction='horizontal', titleColor='black', labelColor='black'))
             )
             
-            lines_standings = base_standings.mark_line(strokeWidth=3).encode()
-            points_standings = base_standings.mark_circle(size=60)
-            labels_standings = base_standings.mark_text(align='left', dx=7, dy=-7, fontStyle='bold', fontSize=11, color='black').encode(text='RawDisplay:N')
+            lines_st = base_standings.mark_line(strokeWidth=3).encode()
+            points_st = base_standings.mark_circle(size=65)
+            labels_st = base_standings.mark_text(align='left', dx=7, dy=-7, fontStyle='bold', fontSize=11, color='black').encode(text='RawDisplay:N')
             
-            chart_render_st = (lines_standings + points_standings + labels_standings).properties(width=1000, height=450, background='white').configure_axis(
+            chart_render_st = (lines_st + points_st + labels_st).properties(height=320, background='white').configure_axis(
                 labelColor='black', titleColor='black'
             )
+            st.altair_chart(chart_render_st, use_container_width=True)
+            st.caption("ℹ️ Upward trending lines mean you are climbing towards 1st place.")
+            st.write("---")
             
-            st.markdown('<div class="scroll-container">', unsafe_allow_html=True)
-            st.altair_chart(chart_render_st, use_container_width=False)
-            st.markdown('</div>', unsafe_allow_html=True)
+        display_scoreboard = master_standings.sort_values(by=active_sort, ascending=True).copy()
+        
+        display_scoreboard = display_scoreboard.rename(columns={
+            "Name": "Participant Name",
+            "Starting Pts": "Start Pts",
+            "100L Pts": "Lap 100 Pts",
+            "150L Pts": "Lap 150 Pts",
+            "Final Pts": "Finish Pts"
+        })
+        
+        render_columns = ["Participant Name", "Start Pts", "Lap 100 Pts", "Lap 150 Pts", "Finish Pts"]
+        
+        st.write("🏆 *Lower score is better! Points equal sum of team driver ranks.*")
+        st.table(display_scoreboard[render_columns].set_index("Participant Name"))
