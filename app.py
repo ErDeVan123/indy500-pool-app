@@ -208,20 +208,12 @@ def get_base_drivers():
 # 2. Sync Race Positions Database
 POSITIONS_FILE = "race_positions.csv"
 def load_race_positions():
-    base_df = get_base_drivers().copy()
-    
+    base_df = get_base_drivers()
     if os.path.exists(POSITIONS_FILE):
         pos_df = pd.read_csv(POSITIONS_FILE)
-        if "Driver" in pos_df.columns and "Pos_100" in pos_df.columns:
-            map_100 = dict(zip(pos_df['Driver'], pos_df['Pos_100']))
-            map_150 = dict(zip(pos_df['Driver'], pos_df['Pos_150']))
-            map_final = dict(zip(pos_df['Driver'], pos_df['Pos_Final']))
-            
-            base_df["Pos_100"] = base_df["Driver"].map(map_100).fillna(0).astype(int)
-            base_df["Pos_150"] = base_df["Driver"].map(map_150).fillna(0).astype(int)
-            base_df["Pos_Final"] = base_df["Driver"].map(map_final).fillna(0).astype(int)
-            return base_df
-            
+        if all(col in pos_df.columns for col in ["Driver", "Pos_100", "Pos_150", "Pos_Final"]):
+            return pd.merge(base_df, pos_df[["Driver", "Pos_100", "Pos_150", "Pos_Final"]], on="Driver", how="left")
+    
     base_df["Pos_100"] = 0
     base_df["Pos_150"] = 0
     base_df["Pos_Final"] = 0
@@ -294,86 +286,75 @@ t2, t4, t5, t3, t1 = st.tabs(tab_names)
 with t2:
     st.markdown("Select exactly **8 drivers**. Maximum **3 from Rows 1-3**.")
     
-    # Structural Form Wrapper preventing early state crashes
-    with st.form("roster_submission_form", clear_on_submit=False):
-        
-        # Track live pool states using separate session tracking states
-        if "form_name_state" not in st.session_state:
-            st.session_state["form_name_state"] = ""
-            
-        entry_name = st.text_input(
-            "Enter Roster Submission Name:", 
-            value=st.session_state["form_name_state"],
-            placeholder="e.g., Sarah - Lineup 1"
-        ).strip()
-        
-        # Build multi-select pool element to capture exactly 8 unique names safely
-        selected_drivers = st.multiselect(
-            "Select Pool Choices (Pick 8 Total):",
-            options=df['Driver'].tolist(),
-            default=[]
-        )
-        
-        count_picked = len(selected_drivers)
-        count_tier = df[df['Driver'].isin(selected_drivers) & (df['Tier_1_3'] == 'Yes')].shape[0]
-        
-        # Metrics immediately following input variables
-        c1, c2 = st.columns(2)
-        c1.metric("Drivers Picked (Must be 8)", f"{count_picked} / 8")
-        c2.metric("Top-Tier Rows 1-3 (Max 3)", f"{count_tier} / 3")
-        
-        can_submit = True
-        if count_picked != 8:
-            st.error(f"⚠️ Lineup must contain exactly 8 choices. You currently have {count_picked} selected.")
-            can_submit = False
-        if count_tier > 3:
-            st.error(f"⚠️ Limit Exceeded: You selected {count_tier} drivers from Rows 1-3. Maximum tier limit is 3.")
-            can_submit = False
-        if not entry_name:
-            st.warning("Please type a submission profile name to lock in roster form entries.")
-            can_submit = False
-        elif entry_name in picks_df['Participant'].values:
-            st.error(f"⚠️ A lineup named '{entry_name}' has already been submitted. Use a new profile tag.")
-            can_submit = False
-            
-        submit_btn = st.form_submit_button("Submit Official Roster Lineup", type="primary")
-        
-        if submit_btn:
-            if can_submit:
-                new_entry = pd.DataFrame([{
-                    "Participant": entry_name,
-                    "P1": selected_drivers[0], "P2": selected_drivers[1], 
-                    "P3": selected_drivers[2], "P4": selected_drivers[3],
-                    "P5": selected_drivers[4], "P6": selected_drivers[5], 
-                    "P7": selected_drivers[6], "P8": selected_drivers[7]
-                }])
-                updated_df = pd.concat([picks_df, new_entry], ignore_index=True)
-                updated_df.to_csv(PICK_FILE, index=False)
-                
-                # Instantly scrub active cached state variables 
-                st.session_state["form_name_state"] = ""
-                st.success("Lineup successfully logged! Roster cleared for the next participant.")
-                st.rerun()
-            else:
-                st.error("Submission failed. Please fix the alignment layout validation blocks above.")
-
-    st.write("---")
-    st.subheader("Reference Grid: Grid Positions & Qualifying Speeds")
+    entry_name = st.text_input("Enter Roster Submission Name:", key="new_user_name", placeholder="e.g., Sarah - Lineup 1").strip()
     
-    # Layout reference display
+    if "selected_pool" not in st.session_state:
+        st.session_state["selected_pool"] = []
+        
+    st.write("---")
+    
     for idx, row in df.iterrows():
+        d_name = row['Driver']
+        is_selected = d_name in st.session_state["selected_pool"]
+        
         with st.container(border=True):
-            col1, col2, col3 = st.columns([1.5, 2.5, 4.0])
+            col1, col2, col3 = st.columns([1.2, 2.8, 4.0])
             with col1:
                 st.write(f"**Start Pos: {row['Starting_Pos']}**")
                 st.caption(f"⏱️ {row['Qual_Speed']}")
                 if row['Tier_1_3'] == "Yes":
                     st.markdown("⭐ *Row 1-3*")
             with col2:
-                st.subheader(row['Driver'])
+                st.subheader(d_name)
                 st.caption(f"#{row['Car_Num']} | {row['Team']}")
+                
+                box_label = "🟢 Selected" if is_selected else "Select Driver"
+                if st.checkbox(box_label, key=f"draft_check_{idx}", value=is_selected):
+                    if d_name not in st.session_state["selected_pool"]:
+                        st.session_state["selected_pool"].append(d_name)
+                        st.rerun()
+                else:
+                    if d_name in st.session_state["selected_pool"]:
+                        st.session_state["selected_pool"].remove(d_name)
+                        st.rerun()
             with col3:
                 st.image(row['Car_Pic'])
+
+    st.write("---")
+    
+    current_picks = st.session_state["selected_pool"]
+    count_picked = len(current_picks)
+    count_tier = df[df['Driver'].isin(current_picks) & (df['Tier_1_3'] == 'Yes')].shape[0]
+    
+    c1, c2 = st.columns(2)
+    c1.metric("Drivers Picked (Must be 8)", f"{count_picked} / 8", delta=None if count_picked <= 8 else "Too Many!", delta_color="inverse")
+    c2.metric("Top-Tier Rows 1-3 (Max 3)", f"{count_tier} / 3", delta=None if count_tier <= 3 else "Limit Exceeded!", delta_color="inverse")
+    
+    can_submit = True
+    if count_picked != 8:
+        st.error(f"⚠️ Blocked: Lineup must contain exactly 8 choices. You currently have {count_picked} selected.")
+        can_submit = False
+    if count_tier > 3:
+        st.error(f"⚠️ Blocked: You have selected {count_tier} drivers from Rows 1-3. The absolute tier limit is 3.")
+        can_submit = False
+    if not entry_name:
+        st.warning("Please input a distinct Submission Name above to activate the lock-in button.")
+        can_submit = False
+    elif entry_name in picks_df['Participant'].values:
+        st.error(f"⚠️ Blocked: A lineup entry named '{entry_name}' has already been submitted. Use a new modifier label.")
+        can_submit = False
+
+    if st.button("Submit Official Roster Lineup", type="primary", disabled=not can_submit):
+        new_entry = pd.DataFrame([{
+            "Participant": entry_name,
+            "P1": current_picks[0], "P2": current_picks[1], "P3": current_picks[2], "P4": current_picks[3],
+            "P5": current_picks[4], "P6": current_picks[5], "P7": current_picks[6], "P8": current_picks[7]
+        }])
+        updated_df = pd.concat([picks_df, new_entry], ignore_index=True)
+        updated_df.to_csv(PICK_FILE, index=False)
+        
+        st.session_state["selected_pool"] = []
+        st.rerun()
 
 # --- VIEW 4: ROSTER VIEW (Now 2nd) ---
 with t4:
@@ -499,6 +480,7 @@ with t5:
     if picks_df.empty:
         st.info("No picks drafted yet.")
     else:
+        # Build counting hashmap
         driver_pick_map = {driver: [] for driver in df['Driver'].tolist()}
         for _, row in picks_df.iterrows():
             p_name = row['Participant']
@@ -506,8 +488,11 @@ with t5:
                 if p in driver_pick_map:
                     driver_pick_map[p].append(p_name)
                     
+        # Match count values directly to master dataframe structure
         df_sorted = df.copy()
         df_sorted['Pick_Count'] = df_sorted['Driver'].map(lambda x: len(driver_pick_map[x]))
+        
+        # Priority 1: Most frequently picked. Priority 2: Standard track order fallback sync.
         df_sorted = df_sorted.sort_values(by=["Pick_Count", "Starting_Pos"], ascending=[False, True])
                         
         for _, row in df_sorted.iterrows():
@@ -515,15 +500,20 @@ with t5:
             choosing_p = driver_pick_map[d_name]
             
             with st.container(border=True):
+                # Layout reordered down a unified vertical card profile
                 st.subheader(d_name)
                 st.caption(f"Car #{row['Car_Num']} | Start: P{row['Starting_Pos']} | Total Drafts: {len(choosing_p)}")
+                
+                # Element 1: Image immediately beneath headers
                 st.image(row['Car_Pic'])
                 
+                # Element 2: Draft tracking strings
                 if choosing_p:
                     st.markdown(f"**Drafted By:** {', '.join(choosing_p)}")
                 else:
                     st.markdown("*Nobody has drafted this driver yet.*")
                     
+                # Element 3: Graphical progression tracker at the bottom of the card block
                 m_labels = ["Start", "Lap 100", "Lap 150", "Finish"]
                 m_vals = [row['Starting_Pos'], row['Pos_100'], row['Pos_150'], row['Pos_Final']]
                 
