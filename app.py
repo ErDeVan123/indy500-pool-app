@@ -34,7 +34,6 @@ st.markdown("""
     }
 
     /* --- NATIVE ST.TABS STYLING OVERRIDES --- */
-    /* Target the overall tab container bar */
     div[data-testid="stTabs"] {
         background-color: #f1f1f1 !important;
         padding: 4px 4px 0px 4px;
@@ -42,7 +41,6 @@ st.markdown("""
         border-bottom: 2px solid #ff0000 !important;
     }
 
-    /* Base styling for ALL tabs (unselected state) */
     div[data-testid="stTabs"] button {
         background-color: #e0e0e0 !important;
         color: #333333 !important;
@@ -54,14 +52,12 @@ st.markdown("""
         font-weight: 600 !important;
     }
 
-    /* High-intensity override to guarantee unselected text color visibility */
     div[data-testid="stTabs"] button p,
     div[data-testid="stTabs"] button span {
         color: #333333 !important;
         -webkit-text-fill-color: #333333 !important;
     }
 
-    /* Active/Selected Tab styling (Stays Red background with White text) */
     div[data-testid="stTabs"] button[aria-selected="true"] {
         background-color: #ff0000 !important;
         background: #ff0000 !important;
@@ -77,7 +73,6 @@ st.markdown("""
         font-weight: bold !important;
     }
     
-    /* Target images inside columns to center vertically and fit horizontally */
     [data-testid="stImage"] img {
         height: 100px !important;
         object-fit: contain !important;
@@ -86,12 +81,11 @@ st.markdown("""
         margin-left: auto;
         margin-right: auto;
     }
-    /* Ensure the column layout visually balances the text height and centers content */
+
     [data-testid="stHorizontalBlock"] {
         align-items: center !important;
     }
     
-    /* HORIZONTAL SCROLL FOR WIDE GRAPHS */
     .scroll-container {
         width: 100%;
         overflow-x: auto;
@@ -103,7 +97,6 @@ st.markdown("""
         margin-bottom: 15px;
     }
     
-    /* MOBILE TEXT & WHITE BACKGROUND FIX FOR DATAFRAMES */
     [data-testid="stDataFrame"] {
         width: 100% !important;
         overflow-x: auto;
@@ -121,7 +114,6 @@ st.markdown("""
         font-size: 13px !important;     
         padding: 4px 6px !important;    
     }
-    /* Force left alignment specifically for the Participant Name column cells */
     [data-testid="stDataFrame"] div[data-testid="stTable"] td:nth-child(2),
     [data-testid="stDataFrame"] div[data-testid="stTable"] th:nth-child(2) {
         text-align: left !important;
@@ -150,7 +142,7 @@ def get_base_drivers():
             "Chip Ganassi Racing", "Ed Carpenter Racing", "Team Penske", "Meyer Shank Racing", "A.J. Foyt Racing", 
             "Arrow McLaren", "Chip Ganassi Racing", "Dreyer & Reinbold", "Team Penske", "Chip Ganassi Racing", 
             "Juncos Hollinger", "Rahal Letterman", "Ed Carpenter Racing", "Meyer Shank Racing", "Ed Carpenter Racing", 
-            "Meyer Shank Racing", "Andretti Global", "Arrow McLaren", "Andretti Global", "Arrow McLaren", 
+            "Marcus Armstrong", "Andretti Global", "Arrow McLaren", "Andretti Global", "Arrow McLaren", 
             "Rahal Letterman", "Arrow McLaren", "Team Penske", "Dale Coyne Racing", "Andretti Global", 
             "HMD Motorsports", "Rahal Letterman", "Rahal Letterman", "Dale Coyne Racing", "Abel Motorsports", 
             "Juncos Hollinger", "A.F. Foyt Racing", "Dreyer & Reinbold"
@@ -208,20 +200,12 @@ def get_base_drivers():
 # 2. Sync Race Positions Database
 POSITIONS_FILE = "race_positions.csv"
 def load_race_positions():
-    base_df = get_base_drivers().copy()
-    
+    base_df = get_base_drivers()
     if os.path.exists(POSITIONS_FILE):
         pos_df = pd.read_csv(POSITIONS_FILE)
-        if "Driver" in pos_df.columns and "Pos_100" in pos_df.columns:
-            map_100 = dict(zip(pos_df['Driver'], pos_df['Pos_100']))
-            map_150 = dict(zip(pos_df['Driver'], pos_df['Pos_150']))
-            map_final = dict(zip(pos_df['Driver'], pos_df['Pos_Final']))
-            
-            base_df["Pos_100"] = base_df["Driver"].map(map_100).fillna(0).astype(int)
-            base_df["Pos_150"] = base_df["Driver"].map(map_150).fillna(0).astype(int)
-            base_df["Pos_Final"] = base_df["Driver"].map(map_final).fillna(0).astype(int)
-            return base_df
-            
+        if all(col in pos_df.columns for col in ["Driver", "Pos_100", "Pos_150", "Pos_Final"]):
+            return pd.merge(base_df, pos_df[["Driver", "Pos_100", "Pos_150", "Pos_Final"]], on="Driver", how="left")
+    
     base_df["Pos_100"] = 0
     base_df["Pos_150"] = 0
     base_df["Pos_Final"] = 0
@@ -290,90 +274,77 @@ def calculate_master_standings():
 tab_names = ["📝 Draft Drivers", "📋 View Rosters", "📊 Popular Picks", "🏁 Milestone Ranks", "🏆 Standings"]
 t2, t4, t5, t3, t1 = st.tabs(tab_names)
 
-# --- VIEW 2: HARD-VALIDATED DRAFT BOARD (Now 1st) ---
+# --- VIEW 2: HARD-VALIDATED DRAFT BOARD ---
 with t2:
     st.markdown("Select exactly **8 drivers**. Maximum **3 from Rows 1-3**.")
     
-    # Structural Form Wrapper preventing early state crashes
-    with st.form("roster_submission_form", clear_on_submit=False):
+    # We wrap the entire selection grid in a Form block to prevent instant page reruns 
+    with st.form("draft_submission_form", clear_on_submit=False):
         
-        # Track live pool states using separate session tracking states
-        if "form_name_state" not in st.session_state:
-            st.session_state["form_name_state"] = ""
+        entry_name = st.text_input("Enter Roster Submission Name:", placeholder="e.g., Sarah - Lineup 1").strip()
+        st.write("---")
+        
+        # Dictionary layout to safely compile the temporary selections inside the form loop
+        selections = {}
+        
+        for idx, row in df.iterrows():
+            d_name = row['Driver']
             
-        entry_name = st.text_input(
-            "Enter Roster Submission Name:", 
-            value=st.session_state["form_name_state"],
-            placeholder="e.g., Sarah - Lineup 1"
-        ).strip()
+            with st.container(border=True):
+                col1, col2, col3 = st.columns([1.5, 2.5, 4.0])
+                with col1:
+                    st.write(f"**Start Pos: {row['Starting_Pos']}**")
+                    st.caption(f"⏱️ {row['Qual_Speed']}")
+                    if row['Tier_1_3'] == "Yes":
+                        st.markdown("⭐ *Row 1-3*")
+                with col2:
+                    st.subheader(d_name)
+                    st.caption(f"#{row['Car_Num']} | {row['Team']}")
+                    
+                    # Selection check box placed directly inside the card profile
+                    selections[d_name] = st.checkbox("Include in Lineup", key=f"select_chk_{idx}")
+                    
+                with col3:
+                    st.image(row['Car_Pic'])
+
+        st.write("---")
         
-        # Build multi-select pool element to capture exactly 8 unique names safely
-        selected_drivers = st.multiselect(
-            "Select Pool Choices (Pick 8 Total):",
-            options=df['Driver'].tolist(),
-            default=[]
-        )
+        # Calculate pool logic from the form contents upon submission or execution
+        current_picks = [driver for driver, picked in selections.items() if picked]
+        count_picked = len(current_picks)
+        count_tier = df[df['Driver'].isin(current_picks) & (df['Tier_1_3'] == 'Yes')].shape[0]
         
-        count_picked = len(selected_drivers)
-        count_tier = df[df['Driver'].isin(selected_drivers) & (df['Tier_1_3'] == 'Yes')].shape[0]
-        
-        # Metrics immediately following input variables
-        c1, c2 = st.columns(2)
-        c1.metric("Drivers Picked (Must be 8)", f"{count_picked} / 8")
-        c2.metric("Top-Tier Rows 1-3 (Max 3)", f"{count_tier} / 3")
-        
+        # Validation checks run inside form block validation
         can_submit = True
         if count_picked != 8:
-            st.error(f"⚠️ Lineup must contain exactly 8 choices. You currently have {count_picked} selected.")
+            st.error(f"⚠️ Validation Error: Lineup must contain exactly 8 choices. You currently have {count_picked} selected.")
             can_submit = False
         if count_tier > 3:
-            st.error(f"⚠️ Limit Exceeded: You selected {count_tier} drivers from Rows 1-3. Maximum tier limit is 3.")
+            st.error(f"⚠️ Validation Error: You have selected {count_tier} drivers from Rows 1-3. The absolute tier limit is 3.")
             can_submit = False
         if not entry_name:
-            st.warning("Please type a submission profile name to lock in roster form entries.")
+            st.warning("Please fill out your Submission Name profile at the top of the form to submit.")
             can_submit = False
         elif entry_name in picks_df['Participant'].values:
-            st.error(f"⚠️ A lineup named '{entry_name}' has already been submitted. Use a new profile tag.")
+            st.error(f"⚠️ Profile conflict: A lineup entry named '{entry_name}' already exists.")
             can_submit = False
-            
+
         submit_btn = st.form_submit_button("Submit Official Roster Lineup", type="primary")
         
         if submit_btn:
             if can_submit:
                 new_entry = pd.DataFrame([{
                     "Participant": entry_name,
-                    "P1": selected_drivers[0], "P2": selected_drivers[1], 
-                    "P3": selected_drivers[2], "P4": selected_drivers[3],
-                    "P5": selected_drivers[4], "P6": selected_drivers[5], 
-                    "P7": selected_drivers[6], "P8": selected_drivers[7]
+                    "P1": current_picks[0], "P2": current_picks[1], "P3": current_picks[2], "P4": current_picks[3],
+                    "P5": current_picks[4], "P6": current_picks[5], "P7": current_picks[6], "P8": current_picks[7]
                 }])
                 updated_df = pd.concat([picks_df, new_entry], ignore_index=True)
                 updated_df.to_csv(PICK_FILE, index=False)
                 
-                # Instantly scrub active cached state variables 
-                st.session_state["form_name_state"] = ""
-                st.success("Lineup successfully logged! Roster cleared for the next participant.")
+                st.success("Lineup recorded successfully! The app will refresh now.")
                 st.rerun()
             else:
-                st.error("Submission failed. Please fix the alignment layout validation blocks above.")
-
-    st.write("---")
-    st.subheader("Reference Grid: Grid Positions & Qualifying Speeds")
-    
-    # Layout reference display
-    for idx, row in df.iterrows():
-        with st.container(border=True):
-            col1, col2, col3 = st.columns([1.5, 2.5, 4.0])
-            with col1:
-                st.write(f"**Start Pos: {row['Starting_Pos']}**")
-                st.caption(f"⏱️ {row['Qual_Speed']}")
-                if row['Tier_1_3'] == "Yes":
-                    st.markdown("⭐ *Row 1-3*")
-            with col2:
-                st.subheader(row['Driver'])
-                st.caption(f"#{row['Car_Num']} | {row['Team']}")
-            with col3:
-                st.image(row['Car_Pic'])
+                st.error("Please fix the roster errors highlighted above before attempting submission.")
 
 # --- VIEW 4: ROSTER VIEW (Now 2nd) ---
 with t4:
@@ -493,7 +464,7 @@ with t4:
                 with col2:
                     st.image(row['Car_Pic'])
 
-# --- VIEW 5: POPULAR PICKS METRICS (Now 3rd & Redesigned) ---
+# --- VIEW 5: POPULAR PICKS METRICS ---
 with t5:
     st.header("Who drafted who?")
     if picks_df.empty:
@@ -549,7 +520,7 @@ with t5:
                     )
                     st.altair_chart(chart_render_pop, use_container_width=True)
 
-# --- VIEW 3: LIVE FIELD RUNNING ORDER (Now 4th) ---
+# --- VIEW 3: LIVE FIELD RUNNING ORDER ---
 with t3:
     sort_basis_label = st.selectbox(
         "Milestone to display:",
@@ -650,7 +621,7 @@ with t3:
             st.success("Track intervals securely recorded!")
             st.rerun()
 
-# --- VIEW 1: OVERALL STANDINGS (Now Last) ---
+# --- VIEW 1: OVERALL STANDINGS ---
 with t1:
     st.header("Overall Standings")
     if picks_df.empty:
@@ -664,77 +635,4 @@ with t1:
         field_chart_records = []
         for _, p_row in master_df.iterrows():
             places = [p_row['Start Place'], p_row['100L Place'], p_row['150L Place'], p_row['Final Place']]
-            for m_lbl, place_val in zip(standings_milestones, places):
-                if m_lbl == "Start" or place_val != 0:
-                    graph_coord = (total_participants + 1) - place_val
-                    field_chart_records.append({
-                        "Milestone": m_lbl,
-                        "GraphPosition": graph_coord,
-                        "RawDisplay": f"#{place_val}",
-                        "Participant": p_row['Name']
-                    })
-                    
-        if field_chart_records:
-            field_chart_df = pd.DataFrame(field_chart_records)
-            
-            base_field = alt.Chart(field_chart_df).encode(
-                x=alt.X('Milestone:N', sort=standings_milestones, title="Race Milestone", axis=alt.Axis(grid=True, domain=True, labelAngle=0)),
-                y=alt.Y('GraphPosition:Q', scale=alt.Scale(domain=[1, total_participants]), title="Rank", axis=alt.Axis(labels=False, ticks=False, grid=True, domain=True)),
-                color=alt.Color('Participant:N', legend=alt.Legend(orient='bottom', direction='vertical', titleColor='black', labelColor='black'))
-            )
-            
-            lines_field = base_field.mark_line(strokeWidth=3).encode()
-            points_field = base_field.mark_circle(size=60)
-            labels_field = base_field.mark_text(align='left', dx=7, dy=-7, fontStyle='bold', fontSize=11, color='black').encode(text='RawDisplay:N')
-            
-            chart_obj = (lines_field + points_field + labels_field).properties(width=800, height=320, background='white').configure_axis(
-                labelColor='black', titleColor='black'
-            )
-            
-            st.markdown('<div class="scroll-container">', unsafe_allow_html=True)
-            st.altair_chart(chart_obj, use_container_width=False)
-            st.markdown('</div>', unsafe_allow_html=True)
-            st.caption("ℹ️ Swipe right on the graph above to track later race milestones.")
-            st.write("---")
-
-        column_order = ["Final Place", "Name", "Final Pts", "100L Pts", "150L Pts"]
-        master_df = master_df[column_order].sort_values(by=["Final Place", "Name"])
-
-        st.dataframe(
-            master_df, 
-            column_config={
-                "Final Place": st.column_config.NumberColumn("Rank", format="%d"),
-                "Name": st.column_config.TextColumn("Participant"),
-                "Final Pts": "Fin Pts",
-                "100L Pts": "Lap 100",
-                "150L Pts": "Lap 150"
-            },
-            use_container_width=True, 
-            hide_index=True
-        )
-
-# --- SYSTEM ADMIN COMMAND DECK ---
-st.write("---")
-with st.expander("🛠️ Admin Command Deck (Edit / Delete Entry Controls)"):
-    st.subheader("Reset Race Milestone Positions")
-    st.markdown("Use this during testing to instantly clear all manual inputs for Lap 100, Lap 150, and Final standings, resetting fields clean to 0.")
-    
-    if st.button("Clear Milestone Data & Reset Field", type="secondary"):
-        if os.path.exists(POSITIONS_FILE):
-            os.remove(POSITIONS_FILE)
-        st.success("All test milestones successfully cleared back to 0!")
-        st.rerun()
-        
-    st.write("---")
-
-    if picks_df.empty:
-        st.info("No participant records currently stored to edit.")
-    else:
-        st.subheader("Delete an Entry Profile Lineup")
-        delete_target = st.selectbox("Select Entry to Permanently Delete:", picks_df['Participant'].tolist(), key="admin_del_select")
-        
-        if st.button("Permanently Delete Roster", type="primary"):
-            updated_picks = picks_df[picks_df['Participant'] != delete_target]
-            updated_picks.to_csv(PICK_FILE, index=False)
-            st.success(f"Successfully erased profile data for: {delete_target}")
-            st.rerun()
+            for m_lbl, place
