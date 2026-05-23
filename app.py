@@ -143,7 +143,13 @@ def load_positions_overwrite_data(drivers_df):
 def get_compiled_race_dataframe():
     d_df = load_drivers_data()
     p_df = load_positions_overwrite_data(d_df)
-    merged = pd.merge(d_df, p_df, on="Driver", how="left")
+    
+    # Explicitly pull only the positional telemetry parameters from the overwrite sheet 
+    # to guarantee Starting_Pos doesn't get mutated or replaced by index shifts.
+    p_df_clean = p_df[["Driver", "Pos_100", "Pos_150", "Pos_Final"]]
+    
+    merged = pd.merge(d_df, p_df_clean, on="Driver", how="left")
+    merged["Starting_Pos"] = merged["Starting_Pos"].astype(int)
     merged["Pos_100"] = merged["Pos_100"].fillna(0).astype(int)
     merged["Pos_150"] = merged["Pos_150"].fillna(0).astype(int)
     merged["Pos_Final"] = merged["Pos_Final"].fillna(0).astype(int)
@@ -231,7 +237,7 @@ with t4:
             st.success("Race placement logs updated globally!")
             st.rerun()
 
-# --- VIEW 1: MASTER SCOREBOARD STANDINGS (Restored Version) ---
+# --- VIEW 1: MASTER SCOREBOARD STANDINGS ---
 with t1:
     st.header("Standings")
     master_standings = calculate_master_standings()
