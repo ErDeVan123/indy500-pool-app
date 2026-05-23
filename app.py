@@ -208,12 +208,21 @@ def get_base_drivers():
 # 2. Sync Race Positions Database
 POSITIONS_FILE = "race_positions.csv"
 def load_race_positions():
-    base_df = get_base_drivers()
+    base_df = get_base_drivers().copy()
+    
     if os.path.exists(POSITIONS_FILE):
         pos_df = pd.read_csv(POSITIONS_FILE)
-        if all(col in pos_df.columns for col in ["Driver", "Pos_100", "Pos_150", "Pos_Final"]):
-            return pd.merge(base_df, pos_df[["Driver", "Pos_100", "Pos_150", "Pos_Final"]], on="Driver", how="left")
-    
+        # Verify valid track columns exist to safeguard against structural mutations
+        if "Driver" in pos_df.columns and "Pos_100" in pos_df.columns:
+            map_100 = dict(zip(pos_df['Driver'], pos_df['Pos_100']))
+            map_150 = dict(zip(pos_df['Driver'], pos_df['Pos_150']))
+            map_final = dict(zip(pos_df['Driver'], pos_df['Pos_Final']))
+            
+            base_df["Pos_100"] = base_df["Driver"].map(map_100).fillna(0).astype(int)
+            base_df["Pos_150"] = base_df["Driver"].map(map_150).fillna(0).astype(int)
+            base_df["Pos_Final"] = base_df["Driver"].map(map_final).fillna(0).astype(int)
+            return base_df
+            
     base_df["Pos_100"] = 0
     base_df["Pos_150"] = 0
     base_df["Pos_Final"] = 0
