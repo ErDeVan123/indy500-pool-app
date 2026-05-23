@@ -69,7 +69,6 @@ PARTICIPANTS_FILE = "participants.csv"
 POSITIONS_FILE = "positions_overwrite.csv"
 
 # --- DEFAULT IMMUTABLE DATA INITIALIZATION ---
-# Base 33 Car Grid Entry Configurations
 DEFAULT_DRIVERS = [
     {"Starting_Pos": 1, "Car_Num": "3", "Driver": "Scott McLaughlin", "Team": "Team Penske"},
     {"Starting_Pos": 2, "Car_Num": "12", "Driver": "Will Power", "Team": "Team Penske"},
@@ -106,7 +105,6 @@ DEFAULT_DRIVERS = [
     {"Starting_Pos": 33, "Car_Num": "17", "Driver": "Callum Ilott", "Team": "Arrow McLaren"}
 ]
 
-# Base Pool Entries (Pre-draft selection arrays)
 DEFAULT_PARTICIPANTS = [
     {"Name": "Uncle Al", "D1": "Scott McLaughlin", "D2": "Scott Dixon", "D3": "Graham Rahal"},
     {"Name": "Speedway Steve", "D1": "Will Power", "D2": "Kyle Kirkwood", "D3": "Rinus VeeKay"},
@@ -117,9 +115,16 @@ DEFAULT_PARTICIPANTS = [
 
 # --- SYSTEM ENGINE DATA SEED LOADER FUNCTIONS ---
 def load_drivers_data():
-    if not os.path.exists(DRIVERS_FILE):
-        pd.DataFrame(DEFAULT_DRIVERS).to_csv(DRIVERS_FILE, index=False)
-    return pd.read_csv(DRIVERS_FILE)
+    if os.path.exists(DRIVERS_FILE):
+        df = pd.read_csv(DRIVERS_FILE)
+        # Self-healing structure checks
+        if "Starting_Pos" in df.columns and "Driver" in df.columns:
+            return df
+            
+    # Reset file if missing or corrupted
+    df_new = pd.DataFrame(DEFAULT_DRIVERS)
+    df_new.to_csv(DRIVERS_FILE, index=False)
+    return df_new
 
 def load_participants_data():
     if not os.path.exists(PARTICIPANTS_FILE):
@@ -127,32 +132,31 @@ def load_participants_data():
     return pd.read_csv(PARTICIPANTS_FILE)
 
 def load_positions_overwrite_data(drivers_df):
-    if not os.path.exists(POSITIONS_FILE):
-        overwrites = []
-        for _, r in drivers_df.iterrows():
-            overwrites.append({
-                "Driver": r['Driver'],
-                "Pos_100": 0,
-                "Pos_150": 0,
-                "Pos_Final": 0
-            })
-        pd.DataFrame(overwrites).to_csv(POSITIONS_FILE, index=False)
+    if os.path.exists(POSITIONS_FILE):
+        df = pd.read_csv(POSITIONS_FILE)
+        if "Driver" in df.columns and "Pos_100" in df.columns:
+            return df
+            
+    overwrites = []
+    for _, r in drivers_df.iterrows():
+        overwrites.append({
+            "Driver": r['Driver'],
+            "Pos_100": 0,
+            "Pos_150": 0,
+            "Pos_Final": 0
+        })
+    df_new = pd.DataFrame(overwrites).to_csv(POSITIONS_FILE, index=False)
     return pd.read_csv(POSITIONS_FILE)
 
 # --- CORE AGGREGATION & PIPELINE ENGINE CALCULATIONS ---
 def get_compiled_race_dataframe():
-    # 1. Always grab the clean base master driver list first
     d_df = load_drivers_data().copy()
-    
-    # 2. Grab overwrite data
     p_df = load_positions_overwrite_data(d_df)
     
-    # 3. Build lookup maps from the overwrite file to map back to master safely without breaking dataframe structure
     map_100 = dict(zip(p_df['Driver'], p_df['Pos_100']))
     map_150 = dict(zip(p_df['Driver'], p_df['Pos_150']))
     map_final = dict(zip(p_df['Driver'], p_df['Pos_Final']))
     
-    # 4. Map the inputs directly onto our clean copy
     d_df["Pos_100"] = d_df["Driver"].map(map_100).fillna(0).astype(int)
     d_df["Pos_150"] = d_df["Driver"].map(map_150).fillna(0).astype(int)
     d_df["Pos_Final"] = d_df["Driver"].map(map_final).fillna(0).astype(int)
@@ -167,7 +171,6 @@ def calculate_master_standings():
     if df_pool.empty:
         return pd.DataFrame()
         
-    # Build fast dictionary map lookups for driver metrics
     map_start = dict(zip(df_race['Driver'], df_race['Starting_Pos']))
     map_100 = dict(zip(df_race['Driver'], df_race['Pos_100']))
     map_150 = dict(zip(df_race['Driver'], df_race['Pos_150']))
@@ -178,7 +181,6 @@ def calculate_master_standings():
     for _, part in df_pool.iterrows():
         drivers = [part['D1'], part['D2'], part['D3']]
         
-        # Point Calculation: Cumulative sum of positions (0 treats unchecked indices as zero)
         pts_start = sum(map_start.get(d, 0) for d in drivers)
         pts_100 = sum(map_100.get(d, 0) if map_100.get(d, 0) != 0 else map_start.get(d, 0) for d in drivers)
         pts_150 = sum(map_150.get(d, 0) if map_150.get(d, 0) != 0 else (map_100.get(d, 0) if map_100.get(d, 0) != 0 else map_start.get(d, 0)) for d in drivers)
@@ -194,7 +196,6 @@ def calculate_master_standings():
         
     st_df = pd.DataFrame(standings_records)
     
-    # Generate positional rankings dynamically across historical nodes (Dense min ranking sorting strategy)
     st_df["Start Place"] = st_df["Starting Pts"].rank(method="min", ascending=True).astype(int)
     st_df["100L Place"] = st_df["100L Pts"].rank(method="min", ascending=True).astype(int)
     st_df["150L Place"] = st_df["150L Pts"].rank(method="min", ascending=True).astype(int)
@@ -250,7 +251,6 @@ with t1:
     if master_standings.empty:
         st.info("No pool participant entries available to calculate score metrics.")
     else:
-        # Determine current active tracking tier based on data entries
         if not (df['Pos_Final'] == 0).all():
             active_sort = "Final Pts"
             rank_col = "Final Place"
@@ -266,7 +266,6 @@ with t1:
             
         total_participants = len(master_standings)
         
-        # Build comprehensive multi-line progression grid tracking for the pool standings
         standings_milestones = ["Start", "Lap 100", "Lap 150", "Finish"]
         standings_chart_records = []
         
