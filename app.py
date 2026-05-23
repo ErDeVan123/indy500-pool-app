@@ -77,7 +77,7 @@ st.markdown("""
         font-weight: bold !important;
     }
     
-    /* Target images inside containers/columns to center vertically and fit horizontally */
+    /* Target images inside columns to center vertically and fit horizontally */
     [data-testid="stImage"] img {
         height: 100px !important;
         object-fit: contain !important;
@@ -278,7 +278,7 @@ def calculate_master_standings():
         
     return master_df
 
-# 4. Navigation Layout rearranged based on preference
+# 4. Navigation Layout rearranged
 tab_names = ["📝 Draft Drivers", "📋 View Rosters", "📊 Popular Picks", "🏁 Milestone Ranks", "🏆 Standings"]
 t2, t4, t5, t3, t1 = st.tabs(tab_names)
 
@@ -341,7 +341,7 @@ with t2:
         st.warning("Please input a distinct Submission Name above to activate the lock-in button.")
         can_submit = False
     elif entry_name in picks_df['Participant'].values:
-        st.error(f"⚠️ Blocked: A lineup entry named '{entry_name}' has already been submitted. Use a new modifier label.")
+        st.error(f"⚠️ Blocked: A lineup entry named '{entry_name}' has already been submitted.")
         can_submit = False
 
     if st.button("Submit Official Roster Lineup", type="primary", disabled=not can_submit):
@@ -352,7 +352,6 @@ with t2:
         }])
         updated_df = pd.concat([picks_df, new_entry], ignore_index=True)
         updated_df.to_csv(PICK_FILE, index=False)
-        
         st.session_state["selected_pool"] = []
         st.rerun()
 
@@ -366,12 +365,7 @@ with t4:
         u_picks = [u_row['P1'], u_row['P2'], u_row['P3'], u_row['P4'], u_row['P5'], u_row['P6'], u_row['P7'], u_row['P8']]
         
         race_is_finished = df["Pos_Final"].sum() == 561
-        
-        if race_is_finished:
-            sort_basis = "Pos_Final"
-        else:
-            sort_basis = "Pos_150" if df["Pos_150"].sum() == 561 else ("Pos_100" if df["Pos_100"].sum() == 561 else "Starting_Pos")
-            
+        sort_basis = "Pos_Final" if race_is_finished else ("Pos_150" if df["Pos_150"].sum() == 561 else ("Pos_100" if df["Pos_100"].sum() == 561 else "Starting_Pos"))
         u_df = df[df['Driver'].isin(u_picks)].sort_values(by=sort_basis)
         
         st.subheader(f"{user}'s Quest for Milk Drinking Immortality")
@@ -396,12 +390,10 @@ with t4:
             
             if len(pool_chart_records) > 1:
                 pool_chart_df = pd.DataFrame(pool_chart_records)
-                
                 base_pool = alt.Chart(pool_chart_df).encode(
                     x=alt.X('Milestone:N', sort=standings_milestones, title="Race Milestone", axis=alt.Axis(grid=True, domain=True)),
                     y=alt.Y('GraphPosition:Q', scale=alt.Scale(domain=[1, total_participants]), title="Rank", axis=alt.Axis(labels=False, ticks=False, grid=True, domain=True))
                 )
-                
                 lines_pool = base_pool.mark_line(color="#1f77b4", strokeWidth=3).encode()
                 points_pool = base_pool.mark_circle(size=70, color="#1f77b4")
                 labels_pool = base_pool.mark_text(align='left', dx=8, dy=-8, fontStyle='bold', fontSize=12, color='black').encode(text='RawDisplay:N')
@@ -410,10 +402,8 @@ with t4:
                     labelColor='black', titleColor='black'
                 )
                 st.altair_chart(chart_render_pool, use_container_width=True)
-                st.caption("ℹ️ Upward trending lines mean you are climbing towards 1st place.")
         
         st.write("---")
-        
         st.subheader("Driver lineup progression")
         chart_records = []
         milestones = ["Start", "Lap 100", "Lap 150", "Finish"]
@@ -422,27 +412,15 @@ with t4:
             points = [row['Starting_Pos'], row['Pos_100'], row['Pos_150'], row['Pos_Final']]
             for m_label, pt in zip(milestones, points):
                 if m_label == "Start" or pt != 0:
-                    chart_records.append({
-                        "Milestone": m_label,
-                        "GraphPosition": 34 - pt,
-                        "RawDisplay": f"P{pt}",
-                        "Driver": f"{row['Driver']} (# {row['Car_Num']})"
-                    })
+                    chart_records.append({"Milestone": m_label, "GraphPosition": 34 - pt, "RawDisplay": f"P{pt}", "Driver": f"{row['Driver']} (# {row['Car_Num']})"})
                     
         if chart_records:
             chart_df = pd.DataFrame(chart_records)
-            
             base_multi = alt.Chart(chart_df).encode(
                 x=alt.X('Milestone:N', sort=milestones, title="Race Milestone", axis=alt.Axis(grid=True, domain=True)),
-                y=alt.Y(
-                    'GraphPosition:Q', 
-                    scale=alt.Scale(domain=[1, 33]), 
-                    title="Rank", 
-                    axis=alt.Axis(grid=True, domain=True, tickCount=7, labels=False, ticks=False)
-                ),
+                y=alt.Y('GraphPosition:Q', scale=alt.Scale(domain=[1, 33]), title="Rank", axis=alt.Axis(grid=True, domain=True, tickCount=7, labels=False, ticks=False)),
                 color=alt.Color('Driver:N', legend=alt.Legend(orient='bottom', direction='vertical', titleColor='black', labelColor='black'))
             )
-            
             lines_multi = base_multi.mark_line(strokeWidth=2.5).encode()
             points_multi = base_multi.mark_circle(size=55)
             labels_multi = base_multi.mark_text(align='left', dx=6, dy=-6, fontStyle='bold', fontSize=10, color='black').encode(text='RawDisplay:N')
@@ -453,7 +431,6 @@ with t4:
             st.altair_chart(chart_render_multi, use_container_width=True)
             
         st.write("---")
-        
         for _, row in u_df.iterrows():
             with st.container(border=True):
                 col1, col2 = st.columns([4.0, 4.0])
@@ -470,7 +447,6 @@ with t4:
                             st.markdown(f"📉 **Lost {abs(pos_differential)} places** during the race.")
                         else:
                             st.markdown("↔️ **Held position** exactly from grid position to checkered flag.")
-                            
                 with col2:
                     st.image(row['Car_Pic'])
 
@@ -516,12 +492,10 @@ with t5:
                         
                 if len(driver_history) > 1:
                     single_driver_df = pd.DataFrame(driver_history)
-                    
                     base_pop = alt.Chart(single_driver_df).encode(
                         x=alt.X('Milestone:N', sort=m_labels, title="Milestone", axis=alt.Axis(grid=True, domain=True)),
                         y=alt.Y('GraphPosition:Q', scale=alt.Scale(domain=[1, 33]), title="Rank", axis=alt.Axis(labels=False, ticks=False, grid=True, domain=True))
                     )
-                    
                     lines_pop = base_pop.mark_line(color="#ff4b4b").encode()
                     points_pop = base_pop.mark_circle(size=60, color="#ff4b4b")
                     labels_pop = base_pop.mark_text(align='left', dx=7, dy=-7, fontStyle='bold', fontSize=11, color='black').encode(text='RawDisplay:N')
@@ -652,7 +626,7 @@ with t3:
 
 # --- VIEW 1: MASTER SCOREBOARD STANDINGS (Restored Version) ---
 with t1:
-    st.header("Live Pool Standings")
+    st.header("Standings")
     master_standings = calculate_master_standings()
     
     if master_standings.empty:
@@ -698,21 +672,24 @@ with t1:
                 y=alt.Y(
                     'GraphPosition:Q', 
                     scale=alt.Scale(domain=[1, total_participants]), 
-                    title="Rank Location", 
+                    title=None, 
                     axis=alt.Axis(grid=True, domain=True, labels=False, ticks=False)
                 ),
-                color=alt.Color('Pool Participant:N', legend=alt.Legend(orient='bottom', direction='horizontal', titleColor='black', labelColor='black'))
+                color=alt.Color('Pool Participant:N', legend=alt.Legend(orient='left', title=None, labelColor='black'))
             )
             
             lines_st = base_standings.mark_line(strokeWidth=3).encode()
             points_st = base_standings.mark_circle(size=65)
             labels_st = base_standings.mark_text(align='left', dx=7, dy=-7, fontStyle='bold', fontSize=11, color='black').encode(text='RawDisplay:N')
             
-            chart_render_st = (lines_st + points_st + labels_st).properties(height=320, background='white').configure_axis(
+            chart_render_st = (lines_st + points_st + labels_st).properties(width=1200, height=350, background='white').configure_axis(
                 labelColor='black', titleColor='black'
             )
-            st.altair_chart(chart_render_st, use_container_width=True)
-            st.caption("ℹ️ Upward trending lines mean you are climbing towards 1st place.")
+            
+            st.markdown('<div class="scroll-container">', unsafe_allow_html=True)
+            st.altair_chart(chart_render_st, use_container_width=False)
+            st.markdown('</div>', unsafe_allow_html=True)
+            st.caption("ℹ️ Swipe right to scroll the timeline. Upward trending lines mean you are climbing towards 1st place.")
             st.write("---")
             
         display_scoreboard = master_standings.sort_values(by=active_sort, ascending=True).copy()
