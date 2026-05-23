@@ -141,19 +141,24 @@ def load_positions_overwrite_data(drivers_df):
 
 # --- CORE AGGREGATION & PIPELINE ENGINE CALCULATIONS ---
 def get_compiled_race_dataframe():
-    d_df = load_drivers_data()
+    # 1. Always grab the clean base master driver list first
+    d_df = load_drivers_data().copy()
+    
+    # 2. Grab overwrite data
     p_df = load_positions_overwrite_data(d_df)
     
-    # Explicitly pull only the positional telemetry parameters from the overwrite sheet 
-    # to guarantee Starting_Pos doesn't get mutated or replaced by index shifts.
-    p_df_clean = p_df[["Driver", "Pos_100", "Pos_150", "Pos_Final"]]
+    # 3. Build lookup maps from the overwrite file to map back to master safely without breaking dataframe structure
+    map_100 = dict(zip(p_df['Driver'], p_df['Pos_100']))
+    map_150 = dict(zip(p_df['Driver'], p_df['Pos_150']))
+    map_final = dict(zip(p_df['Driver'], p_df['Pos_Final']))
     
-    merged = pd.merge(d_df, p_df_clean, on="Driver", how="left")
-    merged["Starting_Pos"] = merged["Starting_Pos"].astype(int)
-    merged["Pos_100"] = merged["Pos_100"].fillna(0).astype(int)
-    merged["Pos_150"] = merged["Pos_150"].fillna(0).astype(int)
-    merged["Pos_Final"] = merged["Pos_Final"].fillna(0).astype(int)
-    return merged
+    # 4. Map the inputs directly onto our clean copy
+    d_df["Pos_100"] = d_df["Driver"].map(map_100).fillna(0).astype(int)
+    d_df["Pos_150"] = d_df["Driver"].map(map_150).fillna(0).astype(int)
+    d_df["Pos_Final"] = d_df["Driver"].map(map_final).fillna(0).astype(int)
+    d_df["Starting_Pos"] = d_df["Starting_Pos"].astype(int)
+    
+    return d_df
 
 def calculate_master_standings():
     df_race = get_compiled_race_dataframe()
